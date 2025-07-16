@@ -1,1 +1,29 @@
 node_modules
+
+# Backend temporary files
+backend/logs/
+backend/cache/
+*.log
+
+# Database backups
+*.sql.backup
+
+# Temporary files
+/tmp/
+*.tmp
+*.temp
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db

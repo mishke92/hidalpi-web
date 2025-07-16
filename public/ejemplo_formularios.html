@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Registro y Agendamiento - HidalPi Web</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        
+        .forms-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .form-card {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-top: 4px solid #3498db;
+        }
+        
+        .form-card h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            text-align: center;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        
+        .btn {
+            background-color: #3498db;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+            width: 100%;
+        }
+        
+        .btn:hover {
+            background-color: #2980b9;
+        }
+        
+        .btn:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+        
+        .message {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            color: #3498db;
+            font-style: italic;
+        }
+        
+        .results-section {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            margin-top: 30px;
+        }
+        
+        .results-section h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .agendamientos-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        .agendamientos-table th,
+        .agendamientos-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .agendamientos-table th {
+            background-color: #3498db;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .agendamientos-table tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .status-pendiente {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-confirmada {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .status-cancelada {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .status-completada {
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+        
+        .row {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .col {
+            flex: 1;
+        }
+        
+        @media (max-width: 768px) {
+            .forms-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .row {
+                flex-direction: column;
+            }
+            
+            .agendamientos-table {
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Sistema de Registro y Agendamiento</h1>
+        
+        <div class="forms-grid">
+            <!-- Formulario de Registro de Empresa -->
+            <div class="form-card">
+                <h2>Registro de Empresa</h2>
+                <form id="empresaForm">
+                    <div class="form-group">
+                        <label for="empresa_nombre">Nombre de la Empresa *</label>
+                        <input type="text" id="empresa_nombre" name="nombre" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="empresa_ruc">RUC *</label>
+                        <input type="text" id="empresa_ruc" name="ruc" pattern="[0-9]{11}" maxlength="11" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="empresa_representante">Representante Legal *</label>
+                        <input type="text" id="empresa_representante" name="representante_legal" required>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col">
+                            <div class="form-group">
+                                <label for="empresa_telefono">Teléfono</label>
+                                <input type="tel" id="empresa_telefono" name="telefono">
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form-group">
+                                <label for="empresa_email">Email</label>
+                                <input type="email" id="empresa_email" name="email">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="empresa_direccion">Dirección</label>
+                        <input type="text" id="empresa_direccion" name="direccion">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="empresa_sector">Sector</label>
+                        <select id="empresa_sector" name="sector">
+                            <option value="">Seleccionar sector</option>
+                            <option value="Servicios Legales">Servicios Legales</option>
+                            <option value="Consultoría Legal">Consultoría Legal</option>
+                            <option value="Notaría">Notaría</option>
+                            <option value="Otros">Otros</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="empresa_descripcion">Descripción</label>
+                        <textarea id="empresa_descripcion" name="descripcion" placeholder="Descripción de la empresa..."></textarea>
+                    </div>
+                    
+                    <div class="loading" id="empresaLoading">Registrando empresa...</div>
+                    <div id="empresaMessage"></div>
+                    
+                    <button type="submit" class="btn">Registrar Empresa</button>
+                </form>
+            </div>
+            
+            <!-- Formulario de Registro de Cliente -->
+            <div class="form-card">
+                <h2>Registro de Cliente</h2>
+                <form id="clienteForm">
+                    <div class="row">
+                        <div class="col">
+                            <div class="form-group">
+                                <label for="cliente_nombre">Nombre *</label>
+                                <input type="text" id="cliente_nombre" name="nombre" required>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form-group">
+                                <label for="cliente_apellido">Apellido *</label>
+                                <input type="text" id="cliente_apellido" name="apellido" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col">
+                            <div class="form-group">
+                                <label for="cliente_tipo_documento">Tipo de Documento *</label>
+                                <select id="cliente_tipo_documento" name="tipo_documento" required>
+                                    <option value="DNI">DNI</option>
+                                    <option value="CE">Carnet de Extranjería</option>
+                                    <option value="pasaporte">Pasaporte</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form-group">
+                                <label for="cliente_documento">Número de Documento *</label>
+                                <input type="text" id="cliente_documento" name="documento" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="cliente_email">Email</label>
+                        <input type="email" id="cliente_email" name="email">
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col">
+                            <div class="form-group">
+                                <label for="cliente_telefono">Teléfono</label>
+                                <input type="tel" id="cliente_telefono" name="telefono">
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form-group">
+                                <label for="cliente_fecha_nacimiento">Fecha de Nacimiento</label>
+                                <input type="date" id="cliente_fecha_nacimiento" name="fecha_nacimiento">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="cliente_direccion">Dirección</label>
+                        <input type="text" id="cliente_direccion" name="direccion">
+                    </div>
+                    
+                    <div class="loading" id="clienteLoading">Registrando cliente...</div>
+                    <div id="clienteMessage"></div>
+                    
+                    <button type="submit" class="btn">Registrar Cliente</button>
+                </form>
+            </div>
+            
+            <!-- Formulario de Agendamiento -->
+            <div class="form-card">
+                <h2>Agendar Cita</h2>
+                <form id="agendamientoForm">
+                    <div class="row">
+                        <div class="col">
+                            <div class="form-group">
+                                <label for="agendamiento_cliente_id">Cliente *</label>
+                                <select id="agendamiento_cliente_id" name="cliente_id" required>
+                                    <option value="">Seleccionar cliente</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form-group">
+                                <label for="agendamiento_empresa_id">Empresa *</label>
+                                <select id="agendamiento_empresa_id" name="empresa_id" required>
+                                    <option value="">Seleccionar empresa</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="agendamiento_servicio">Servicio *</label>
+                        <select id="agendamiento_servicio" name="servicio" required>
+                            <option value="">Seleccionar servicio</option>
+                            <option value="Consulta Legal General">Consulta Legal General</option>
+                            <option value="Asesoría Empresarial">Asesoría Empresarial</option>
+                            <option value="Redacción de Contratos">Redacción de Contratos</option>
+                            <option value="Representación Legal">Representación Legal</option>
+                            <option value="Consulta Tributaria">Consulta Tributaria</option>
+                        </select>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col">
+                            <div class="form-group">
+                                <label for="agendamiento_fecha">Fecha *</label>
+                                <input type="date" id="agendamiento_fecha" name="fecha" required>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form-group">
+                                <label for="agendamiento_hora">Hora *</label>
+                                <input type="time" id="agendamiento_hora" name="hora" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col">
+                            <div class="form-group">
+                                <label for="agendamiento_prioridad">Prioridad</label>
+                                <select id="agendamiento_prioridad" name="prioridad">
+                                    <option value="baja">Baja</option>
+                                    <option value="media" selected>Media</option>
+                                    <option value="alta">Alta</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form-group">
+                                <label for="agendamiento_bot">
+                                    <input type="checkbox" id="agendamiento_bot" name="creado_por_bot" style="width: auto; margin-right: 10px;">
+                                    Creado por Bot
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="agendamiento_observaciones">Observaciones</label>
+                        <textarea id="agendamiento_observaciones" name="observaciones" placeholder="Observaciones adicionales..."></textarea>
+                    </div>
+                    
+                    <div class="loading" id="agendamientoLoading">Creando agendamiento...</div>
+                    <div id="agendamientoMessage"></div>
+                    
+                    <button type="submit" class="btn">Agendar Cita</button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Sección de Resultados -->
+        <div class="results-section">
+            <h2>Agendamientos Recientes</h2>
+            <button id="cargarAgendamientos" class="btn" style="width: auto; margin-bottom: 20px;">Cargar Agendamientos</button>
+            <div class="loading" id="agendamientosLoading">Cargando agendamientos...</div>
+            <div id="agendamientosMessage"></div>
+            <div id="agendamientosTable"></div>
+        </div>
+    </div>
+
+    <script>
+        // Configuración de la API
+        const API_BASE_URL = 'backend/';
+        
+        // Función para mostrar mensajes
+        function mostrarMensaje(elementId, mensaje, tipo = 'success') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = mensaje;
+            element.className = `message ${tipo}`;
+            element.style.display = 'block';
+            
+            // Ocultar mensaje después de 5 segundos
+            setTimeout(() => {
+                element.style.display = 'none';
+            }, 5000);
+        }
+        
+        // Función para mostrar/ocultar loading
+        function toggleLoading(elementId, show) {
+            const element = document.getElementById(elementId);
+            element.style.display = show ? 'block' : 'none';
+        }
+        
+        // Función para realizar peticiones AJAX
+        async function realizarPeticion(url, metodo = 'GET', datos = null) {
+            try {
+                const opciones = {
+                    method: metodo,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                };
+                
+                if (datos) {
+                    opciones.body = JSON.stringify(datos);
+                }
+                
+                const response = await fetch(API_BASE_URL + url, opciones);
+                return await response.json();
+            } catch (error) {
+                console.error('Error en la petición:', error);
+                return { error: true, mensaje: 'Error de conexión' };
+            }
+        }
+        
+        // Registro de empresa
+        document.getElementById('empresaForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            toggleLoading('empresaLoading', true);
+            
+            const formData = new FormData(this);
+            const datos = Object.fromEntries(formData);
+            
+            const resultado = await realizarPeticion('registrar_empresa.php', 'POST', datos);
+            
+            toggleLoading('empresaLoading', false);
+            
+            if (resultado.error) {
+                mostrarMensaje('empresaMessage', resultado.mensaje, 'error');
+            } else {
+                mostrarMensaje('empresaMessage', resultado.mensaje, 'success');
+                this.reset();
+                cargarEmpresas(); // Recargar select de empresas
+            }
+        });
+        
+        // Registro de cliente
+        document.getElementById('clienteForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            toggleLoading('clienteLoading', true);
+            
+            const formData = new FormData(this);
+            const datos = Object.fromEntries(formData);
+            
+            const resultado = await realizarPeticion('registrar_cliente.php', 'POST', datos);
+            
+            toggleLoading('clienteLoading', false);
+            
+            if (resultado.error) {
+                mostrarMensaje('clienteMessage', resultado.mensaje, 'error');
+            } else {
+                mostrarMensaje('clienteMessage', resultado.mensaje, 'success');
+                this.reset();
+                cargarClientes(); // Recargar select de clientes
+            }
+        });
+        
+        // Agendamiento
+        document.getElementById('agendamientoForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            toggleLoading('agendamientoLoading', true);
+            
+            const formData = new FormData(this);
+            const datos = Object.fromEntries(formData);
+            
+            // Combinar fecha y hora
+            const fechaHora = `${datos.fecha} ${datos.hora}:00`;
+            datos.fecha_cita = fechaHora;
+            
+            // Convertir checkbox a boolean
+            datos.creado_por_bot = datos.creado_por_bot === 'on';
+            
+            // Remover campos separados de fecha y hora
+            delete datos.fecha;
+            delete datos.hora;
+            
+            const resultado = await realizarPeticion('agendar.php', 'POST', datos);
+            
+            toggleLoading('agendamientoLoading', false);
+            
+            if (resultado.error) {
+                mostrarMensaje('agendamientoMessage', resultado.mensaje, 'error');
+            } else {
+                mostrarMensaje('agendamientoMessage', resultado.mensaje, 'success');
+                this.reset();
+                cargarAgendamientos(); // Recargar tabla de agendamientos
+            }
+        });
+        
+        // Cargar clientes para el select
+        async function cargarClientes() {
+            // Simulación de datos para el ejemplo
+            const selectClientes = document.getElementById('agendamiento_cliente_id');
+            selectClientes.innerHTML = '<option value="">Seleccionar cliente</option>';
+            
+            // En un entorno real, aquí haríamos una petición para obtener los clientes
+            // const clientes = await realizarPeticion('obtener_clientes.php');
+            
+            // Datos de ejemplo
+            const clientesEjemplo = [
+                { id: 1, nombre: 'Ana Pérez', documento: '12345678' },
+                { id: 2, nombre: 'Carlos Rodríguez', documento: '87654321' }
+            ];
+            
+            clientesEjemplo.forEach(cliente => {
+                const option = document.createElement('option');
+                option.value = cliente.id;
+                option.textContent = `${cliente.nombre} (${cliente.documento})`;
+                selectClientes.appendChild(option);
+            });
+        }
+        
+        // Cargar empresas para el select
+        async function cargarEmpresas() {
+            const selectEmpresas = document.getElementById('agendamiento_empresa_id');
+            selectEmpresas.innerHTML = '<option value="">Seleccionar empresa</option>';
+            
+            // Datos de ejemplo
+            const empresasEjemplo = [
+                { id: 1, nombre: 'Estudio Jurídico Hidalgo' },
+                { id: 2, nombre: 'Consultora Legal Perú' }
+            ];
+            
+            empresasEjemplo.forEach(empresa => {
+                const option = document.createElement('option');
+                option.value = empresa.id;
+                option.textContent = empresa.nombre;
+                selectEmpresas.appendChild(option);
+            });
+        }
+        
+        // Cargar agendamientos
+        async function cargarAgendamientos() {
+            toggleLoading('agendamientosLoading', true);
+            
+            const resultado = await realizarPeticion('agendar.php?limit=10');
+            
+            toggleLoading('agendamientosLoading', false);
+            
+            if (resultado.error) {
+                mostrarMensaje('agendamientosMessage', resultado.mensaje, 'error');
+                return;
+            }
+            
+            const tableContainer = document.getElementById('agendamientosTable');
+            
+            if (resultado.agendamientos && resultado.agendamientos.length > 0) {
+                let tableHTML = `
+                    <table class="agendamientos-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Cliente</th>
+                                <th>Empresa</th>
+                                <th>Servicio</th>
+                                <th>Fecha</th>
+                                <th>Estado</th>
+                                <th>Prioridad</th>
+                                <th>Bot</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                
+                resultado.agendamientos.forEach(agendamiento => {
+                    tableHTML += `
+                        <tr>
+                            <td>${agendamiento.id}</td>
+                            <td>${agendamiento.cliente_nombre || 'N/A'}</td>
+                            <td>${agendamiento.empresa_nombre || 'N/A'}</td>
+                            <td>${agendamiento.servicio}</td>
+                            <td>${new Date(agendamiento.fecha_cita).toLocaleString()}</td>
+                            <td><span class="status-badge status-${agendamiento.estado}">${agendamiento.estado}</span></td>
+                            <td>${agendamiento.prioridad}</td>
+                            <td>${agendamiento.creado_por_bot ? 'Sí' : 'No'}</td>
+                        </tr>
+                    `;
+                });
+                
+                tableHTML += '</tbody></table>';
+                tableContainer.innerHTML = tableHTML;
+            } else {
+                tableContainer.innerHTML = '<p>No hay agendamientos disponibles.</p>';
+            }
+        }
+        
+        // Validación de documento según tipo
+        document.getElementById('cliente_tipo_documento').addEventListener('change', function() {
+            const documentoInput = document.getElementById('cliente_documento');
+            const tipo = this.value;
+            
+            documentoInput.value = '';
+            
+            if (tipo === 'DNI') {
+                documentoInput.pattern = '[0-9]{8}';
+                documentoInput.maxLength = 8;
+                documentoInput.placeholder = 'Ingrese 8 dígitos';
+            } else if (tipo === 'CE') {
+                documentoInput.pattern = '[0-9]{9}';
+                documentoInput.maxLength = 9;
+                documentoInput.placeholder = 'Ingrese 9 dígitos';
+            } else if (tipo === 'pasaporte') {
+                documentoInput.pattern = '[A-Za-z0-9]{6,20}';
+                documentoInput.maxLength = 20;
+                documentoInput.placeholder = 'Ingrese número de pasaporte';
+            }
+        });
+        
+        // Establecer fecha mínima para agendamientos (hoy)
+        document.getElementById('agendamiento_fecha').min = new Date().toISOString().split('T')[0];
+        
+        // Event listener para cargar agendamientos
+        document.getElementById('cargarAgendamientos').addEventListener('click', cargarAgendamientos);
+        
+        // Cargar datos iniciales
+        document.addEventListener('DOMContentLoaded', function() {
+            cargarClientes();
+            cargarEmpresas();
+            cargarAgendamientos();
+        });
+    </script>
+</body>
+</html>
