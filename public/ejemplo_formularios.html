@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formularios de Prueba - Hidalpi & Asociados</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        h2 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        textarea {
+            height: 80px;
+            resize: vertical;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .message {
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 4px;
+            display: none;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .required {
+            color: red;
+        }
+        .note {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Formularios de Prueba - Sistema de Agendamiento</h1>
+    
+    <div class="note">
+        <strong>Nota:</strong> Estos formularios son para pruebas del sistema backend. 
+        Asegúrate de que XAMPP esté ejecutándose y que la base de datos esté creada con el archivo estructura.sql
+    </div>
+
+    <!-- Formulario de Registro de Empresa -->
+    <div class="container">
+        <h2>1. Registro de Empresa</h2>
+        <form id="empresaForm">
+            <div class="form-group">
+                <label for="empresa_nombre">Nombre de la Empresa <span class="required">*</span></label>
+                <input type="text" id="empresa_nombre" name="nombre" required>
+            </div>
+            <div class="form-group">
+                <label for="empresa_ruc">RUC <span class="required">*</span></label>
+                <input type="text" id="empresa_ruc" name="ruc" pattern="[0-9]{11}" maxlength="11" required>
+            </div>
+            <div class="form-group">
+                <label for="empresa_email">Email <span class="required">*</span></label>
+                <input type="email" id="empresa_email" name="email" required>
+            </div>
+            <div class="form-group">
+                <label for="empresa_telefono">Teléfono</label>
+                <input type="tel" id="empresa_telefono" name="telefono">
+            </div>
+            <div class="form-group">
+                <label for="empresa_direccion">Dirección</label>
+                <textarea id="empresa_direccion" name="direccion"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="empresa_contacto">Contacto Principal</label>
+                <input type="text" id="empresa_contacto" name="contacto_principal">
+            </div>
+            <div class="form-group">
+                <label for="empresa_sector">Sector</label>
+                <input type="text" id="empresa_sector" name="sector">
+            </div>
+            <button type="submit">Registrar Empresa</button>
+        </form>
+        <div id="empresaMessage" class="message"></div>
+    </div>
+
+    <!-- Formulario de Registro de Cliente -->
+    <div class="container">
+        <h2>2. Registro de Cliente</h2>
+        <form id="clienteForm">
+            <div class="form-group">
+                <label for="cliente_nombre">Nombre <span class="required">*</span></label>
+                <input type="text" id="cliente_nombre" name="nombre" required>
+            </div>
+            <div class="form-group">
+                <label for="cliente_apellido">Apellido <span class="required">*</span></label>
+                <input type="text" id="cliente_apellido" name="apellido" required>
+            </div>
+            <div class="form-group">
+                <label for="cliente_email">Email <span class="required">*</span></label>
+                <input type="email" id="cliente_email" name="email" required>
+            </div>
+            <div class="form-group">
+                <label for="cliente_telefono">Teléfono</label>
+                <input type="tel" id="cliente_telefono" name="telefono">
+            </div>
+            <div class="form-group">
+                <label for="cliente_dni">DNI</label>
+                <input type="text" id="cliente_dni" name="dni" pattern="[0-9]{8}" maxlength="8">
+            </div>
+            <div class="form-group">
+                <label for="cliente_direccion">Dirección</label>
+                <textarea id="cliente_direccion" name="direccion"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="cliente_fecha_nacimiento">Fecha de Nacimiento</label>
+                <input type="date" id="cliente_fecha_nacimiento" name="fecha_nacimiento">
+            </div>
+            <div class="form-group">
+                <label for="cliente_genero">Género</label>
+                <select id="cliente_genero" name="genero">
+                    <option value="">Seleccionar...</option>
+                    <option value="masculino">Masculino</option>
+                    <option value="femenino">Femenino</option>
+                    <option value="otro">Otro</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="cliente_empresa_id">ID de Empresa (opcional)</label>
+                <input type="number" id="cliente_empresa_id" name="empresa_id">
+            </div>
+            <button type="submit">Registrar Cliente</button>
+        </form>
+        <div id="clienteMessage" class="message"></div>
+    </div>
+
+    <!-- Formulario de Agendamiento -->
+    <div class="container">
+        <h2>3. Crear Agendamiento</h2>
+        <form id="agendamientoForm">
+            <div class="form-group">
+                <label for="agendar_cliente_id">ID del Cliente <span class="required">*</span></label>
+                <input type="number" id="agendar_cliente_id" name="cliente_id" required>
+            </div>
+            <div class="form-group">
+                <label for="agendar_empresa_id">ID de Empresa (opcional)</label>
+                <input type="number" id="agendar_empresa_id" name="empresa_id">
+            </div>
+            <div class="form-group">
+                <label for="agendar_fecha">Fecha y Hora de la Cita <span class="required">*</span></label>
+                <input type="datetime-local" id="agendar_fecha" name="fecha_cita" required>
+            </div>
+            <div class="form-group">
+                <label for="agendar_duracion">Duración (minutos)</label>
+                <input type="number" id="agendar_duracion" name="duracion_minutos" value="60" min="15" max="480">
+            </div>
+            <div class="form-group">
+                <label for="agendar_servicio">Servicio <span class="required">*</span></label>
+                <select id="agendar_servicio" name="servicio" required>
+                    <option value="">Seleccionar servicio...</option>
+                    <option value="Consulta Legal">Consulta Legal</option>
+                    <option value="Asesoría Tributaria">Asesoría Tributaria</option>
+                    <option value="Derecho Laboral">Derecho Laboral</option>
+                    <option value="Derecho Corporativo">Derecho Corporativo</option>
+                    <option value="Derecho Familiar">Derecho Familiar</option>
+                    <option value="Derecho Penal">Derecho Penal</option>
+                    <option value="Otro">Otro</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="agendar_descripcion">Descripción</label>
+                <textarea id="agendar_descripcion" name="descripcion"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="agendar_prioridad">Prioridad</label>
+                <select id="agendar_prioridad" name="prioridad">
+                    <option value="media">Media</option>
+                    <option value="baja">Baja</option>
+                    <option value="alta">Alta</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="agendar_modalidad">Modalidad</label>
+                <select id="agendar_modalidad" name="modalidad">
+                    <option value="presencial">Presencial</option>
+                    <option value="virtual">Virtual</option>
+                    <option value="telefonica">Telefónica</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="agendar_ubicacion">Ubicación</label>
+                <input type="text" id="agendar_ubicacion" name="ubicacion">
+            </div>
+            <div class="form-group">
+                <label for="agendar_url_reunion">URL de Reunión (para citas virtuales)</label>
+                <input type="url" id="agendar_url_reunion" name="url_reunion">
+            </div>
+            <div class="form-group">
+                <label for="agendar_creado_por_bot">
+                    <input type="checkbox" id="agendar_creado_por_bot" name="creado_por_bot"> 
+                    Creado por Bot
+                </label>
+            </div>
+            <div class="form-group">
+                <label for="agendar_sitio_origen">Sitio de Origen</label>
+                <select id="agendar_sitio_origen" name="sitio_origen">
+                    <option value="web">Web</option>
+                    <option value="chatbot">Chatbot</option>
+                    <option value="app_movil">App Móvil</option>
+                    <option value="telefono">Teléfono</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="agendar_notas">Notas Adicionales</label>
+                <textarea id="agendar_notas" name="notas_adicionales"></textarea>
+            </div>
+            <button type="submit">Crear Agendamiento</button>
+        </form>
+        <div id="agendamientoMessage" class="message"></div>
+    </div>
+
+    <script>
+        // Función para mostrar mensajes
+        function showMessage(elementId, message, isSuccess) {
+            const messageElement = document.getElementById(elementId);
+            messageElement.textContent = message;
+            messageElement.className = 'message ' + (isSuccess ? 'success' : 'error');
+            messageElement.style.display = 'block';
+            
+            // Ocultar mensaje después de 5 segundos
+            setTimeout(() => {
+                messageElement.style.display = 'none';
+            }, 5000);
+        }
+
+        // Función para hacer peticiones AJAX
+        function makeRequest(url, data, messageElementId) {
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showMessage(messageElementId, data.message, true);
+                    // Limpiar formulario en caso de éxito
+                    document.querySelector(`#${messageElementId}`).closest('.container').querySelector('form').reset();
+                } else {
+                    showMessage(messageElementId, data.message, false);
+                }
+            })
+            .catch(error => {
+                showMessage(messageElementId, 'Error de conexión: ' + error.message, false);
+            });
+        }
+
+        // Manejar formulario de empresa
+        document.getElementById('empresaForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData);
+            makeRequest('../backend/registrar_empresa.php', data, 'empresaMessage');
+        });
+
+        // Manejar formulario de cliente
+        document.getElementById('clienteForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData);
+            // Convertir empresa_id a número si existe
+            if (data.empresa_id) {
+                data.empresa_id = parseInt(data.empresa_id);
+            }
+            makeRequest('../backend/registrar_cliente.php', data, 'clienteMessage');
+        });
+
+        // Manejar formulario de agendamiento
+        document.getElementById('agendamientoForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData);
+            
+            // Convertir IDs a números
+            data.cliente_id = parseInt(data.cliente_id);
+            if (data.empresa_id) {
+                data.empresa_id = parseInt(data.empresa_id);
+            }
+            if (data.duracion_minutos) {
+                data.duracion_minutos = parseInt(data.duracion_minutos);
+            }
+            
+            // Convertir checkbox a booleano
+            data.creado_por_bot = document.getElementById('agendar_creado_por_bot').checked;
+            
+            // Convertir datetime-local a formato MySQL
+            if (data.fecha_cita) {
+                data.fecha_cita = data.fecha_cita.replace('T', ' ') + ':00';
+            }
+            
+            makeRequest('../backend/agendar.php', data, 'agendamientoMessage');
+        });
+
+        // Mostrar/ocultar URL de reunión según modalidad
+        document.getElementById('agendar_modalidad').addEventListener('change', function() {
+            const urlReunionGroup = document.getElementById('agendar_url_reunion').closest('.form-group');
+            if (this.value === 'virtual') {
+                urlReunionGroup.style.display = 'block';
+                document.getElementById('agendar_url_reunion').required = true;
+            } else {
+                urlReunionGroup.style.display = 'none';
+                document.getElementById('agendar_url_reunion').required = false;
+            }
+        });
+    </script>
+</body>
+</html>

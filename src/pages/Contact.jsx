@@ -114,7 +114,7 @@ function Contact() {
       // Simular envío del formulario
       await new Promise(resolve => setTimeout(resolve, 2000));
       setIsSubmitted(true);
-    } catch (error) {
+    } catch {
       alert('Error al enviar el mensaje. Por favor, intente nuevamente.');
     } finally {
       setIsSubmitting(false);

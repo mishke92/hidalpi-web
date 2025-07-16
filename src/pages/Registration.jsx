@@ -116,7 +116,7 @@ function Registration() {
       await new Promise(resolve => setTimeout(resolve, 2000));
       alert('¡Registro exitoso! Se ha enviado un correo de confirmación.');
       // Aquí normalmente redirigiríamos al usuario o mostraríamos un mensaje de éxito
-    } catch (error) {
+    } catch {
       alert('Error al registrar. Por favor, intente nuevamente.');
     } finally {
       setIsSubmitting(false);

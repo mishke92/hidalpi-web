@@ -2,8 +2,6 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar, Star, Users, Award, ArrowRight } from 'lucide-react';
 import bufeteImage from '../assets/bufete_abogados_1.jpg';
-import serviciosImage from '../assets/servicios_legales_1.jpg';
-import justiciaImage from '../assets/justicia_1.jpg';
 
 function Home({ onOpenAppointment }) {
   const testimonials = [
