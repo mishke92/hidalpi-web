@@ -150,6 +150,161 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Función para validar email
+        function isValidEmail(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
+        }
+        
+        // Función para validar nombre
+        function isValidName(name) {
+            const nameRegex = /^[a-zA-ZÀ-ÿ\s]+$/;
+            return nameRegex.test(name) && name.length >= 2 && name.length <= 100;
+        }
+        
+        // Función para validar contraseña
+        function validatePassword(password) {
+            const errors = [];
+            
+            if (password.length < 8) {
+                errors.push('La contraseña debe tener al menos 8 caracteres');
+            }
+            
+            if (!/[A-Z]/.test(password)) {
+                errors.push('La contraseña debe contener al menos una letra mayúscula');
+            }
+            
+            if (!/[a-z]/.test(password)) {
+                errors.push('La contraseña debe contener al menos una letra minúscula');
+            }
+            
+            if (!/\d/.test(password)) {
+                errors.push('La contraseña debe contener al menos un número');
+            }
+            
+            return {
+                isValid: errors.length === 0,
+                errors: errors
+            };
+        }
+        
+        // Función para mostrar errores
+        function showFieldError(fieldName, message) {
+            const field = document.getElementById(fieldName);
+            field.classList.add('is-invalid');
+            field.classList.remove('is-valid');
+            
+            // Limpiar error anterior
+            const existingError = field.parentNode.querySelector('.invalid-feedback');
+            if (existingError) {
+                existingError.remove();
+            }
+            
+            // Agregar nuevo error
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'invalid-feedback';
+            errorDiv.textContent = message;
+            field.parentNode.appendChild(errorDiv);
+        }
+        
+        // Función para limpiar errores
+        function clearFieldError(fieldName) {
+            const field = document.getElementById(fieldName);
+            field.classList.remove('is-invalid');
+            field.classList.add('is-valid');
+            
+            const existingError = field.parentNode.querySelector('.invalid-feedback');
+            if (existingError) {
+                existingError.remove();
+            }
+        }
+        
+        // Función para validar campo individual
+        function validateField(fieldName, value) {
+            switch (fieldName) {
+                case 'nombre':
+                    if (!value.trim()) {
+                        showFieldError(fieldName, 'El nombre es requerido');
+                        return false;
+                    } else if (!isValidName(value)) {
+                        showFieldError(fieldName, 'El nombre solo puede contener letras y espacios (2-100 caracteres)');
+                        return false;
+                    } else {
+                        clearFieldError(fieldName);
+                        return true;
+                    }
+                    
+                case 'email':
+                    if (!value.trim()) {
+                        showFieldError(fieldName, 'El email es requerido');
+                        return false;
+                    } else if (!isValidEmail(value)) {
+                        showFieldError(fieldName, 'Formato de email inválido');
+                        return false;
+                    } else {
+                        clearFieldError(fieldName);
+                        return true;
+                    }
+                    
+                case 'password':
+                    if (!value.trim()) {
+                        showFieldError(fieldName, 'La contraseña es requerida');
+                        return false;
+                    } else {
+                        const passwordValidation = validatePassword(value);
+                        if (!passwordValidation.isValid) {
+                            showFieldError(fieldName, passwordValidation.errors[0]);
+                            return false;
+                        } else {
+                            clearFieldError(fieldName);
+                            return true;
+                        }
+                    }
+                    
+                case 'password_confirm':
+                    const password = document.getElementById('password').value;
+                    if (!value.trim()) {
+                        showFieldError(fieldName, 'Confirme su contraseña');
+                        return false;
+                    } else if (value !== password) {
+                        showFieldError(fieldName, 'Las contraseñas no coinciden');
+                        return false;
+                    } else {
+                        clearFieldError(fieldName);
+                        return true;
+                    }
+                    
+                case 'tipo_usuario':
+                    if (!value) {
+                        showFieldError(fieldName, 'Seleccione un tipo de usuario');
+                        return false;
+                    } else {
+                        clearFieldError(fieldName);
+                        return true;
+                    }
+                    
+                default:
+                    return true;
+            }
+        }
+        
+        // Validación en tiempo real
+        ['nombre', 'email', 'password', 'password_confirm', 'tipo_usuario'].forEach(fieldName => {
+            const field = document.getElementById(fieldName);
+            
+            field.addEventListener('blur', function() {
+                validateField(fieldName, this.value);
+            });
+            
+            field.addEventListener('input', function() {
+                if (this.classList.contains('is-invalid')) {
+                    this.classList.remove('is-invalid');
+                    const error = this.parentNode.querySelector('.invalid-feedback');
+                    if (error) error.remove();
+                }
+            });
+        });
+        
         document.getElementById('registerForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
@@ -161,19 +316,15 @@
             const password_confirm = document.getElementById('password_confirm').value;
             const tipo_usuario = document.getElementById('tipo_usuario').value;
             
-            // Validaciones
-            if (password !== password_confirm) {
-                showAlert('danger', 'Las contraseñas no coinciden');
-                return;
-            }
+            // Validar todos los campos
+            let isValid = true;
+            isValid = validateField('nombre', nombre) && isValid;
+            isValid = validateField('email', email) && isValid;
+            isValid = validateField('password', password) && isValid;
+            isValid = validateField('password_confirm', password_confirm) && isValid;
+            isValid = validateField('tipo_usuario', tipo_usuario) && isValid;
             
-            if (password.length < 8) {
-                showAlert('danger', 'La contraseña debe tener al menos 8 caracteres');
-                return;
-            }
-            
-            if (!tipo_usuario) {
-                showAlert('danger', 'Por favor selecciona un tipo de usuario');
+            if (!isValid) {
                 return;
             }
             
@@ -187,7 +338,15 @@
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ nombre, email, password, tipo_usuario })
+                    body: JSON.stringify({ 
+                        nombre, 
+                        email, 
+                        password, 
+                        tipo_usuario,
+                        pais: 'Ecuador',
+                        provincia: 'El Oro',
+                        canton: 'Machala'
+                    })
                 });
                 
                 const data = await response.json();
@@ -204,7 +363,11 @@
                 }
                 
             } catch (error) {
-                showAlert('danger', 'Error de conexión. Intenta nuevamente.');
+                let errorMessage = 'Error de conexión. Intente nuevamente.';
+                if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                    errorMessage = 'Error de conexión. Verifique su conexión a internet e intente nuevamente.';
+                }
+                showAlert('danger', errorMessage);
                 console.error('Error:', error);
             } finally {
                 // Restaurar botón

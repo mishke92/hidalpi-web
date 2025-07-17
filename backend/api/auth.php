@@ -71,45 +71,77 @@ function registrarUsuario($authService, $input) {
     error_log(json_encode($input)); // Esto escribe en el log de PHP
     
     $requiredFields = ['nombre', 'email', 'password', 'pais', 'provincia', 'canton'];
+    $errors = [];
     
+    // Validar campos requeridos
     foreach ($requiredFields as $field) {
         if (!isset($input[$field]) || empty(trim($input[$field]))) {
-            http_response_code(400);
-            echo json_encode(['error' => "El campo '$field' es requerido", 'success' => false]);
-            return;
+            $errors[] = "El campo '$field' es requerido";
         }
     }
     
     // Validar email
-    if (!filter_var($input['email'], FILTER_VALIDATE_EMAIL)) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Formato de email inválido', 'success' => false]);
-        return;
+    if (isset($input['email']) && !empty($input['email'])) {
+        if (!filter_var($input['email'], FILTER_VALIDATE_EMAIL)) {
+            $errors[] = 'Formato de email inválido';
+        }
+    }
+    
+    // Validar nombre
+    if (isset($input['nombre']) && !empty($input['nombre'])) {
+        $nombre = trim($input['nombre']);
+        if (strlen($nombre) < 2) {
+            $errors[] = 'El nombre debe tener al menos 2 caracteres';
+        }
+        if (strlen($nombre) > 100) {
+            $errors[] = 'El nombre no puede tener más de 100 caracteres';
+        }
+        if (!preg_match('/^[a-zA-ZÀ-ÿ\s]+$/', $nombre)) {
+            $errors[] = 'El nombre solo puede contener letras y espacios';
+        }
     }
     
     // Validar teléfono si se proporciona
     if (isset($input['telefono']) && !empty($input['telefono'])) {
         if (!validarTelefonoEcuador($input['telefono'])) {
-            http_response_code(400);
-            echo json_encode(['error' => 'Formato de teléfono inválido', 'success' => false]);
-            return;
+            $errors[] = 'Formato de teléfono inválido para Ecuador';
         }
     }
     
     // Validar cédula si se proporciona
     if (isset($input['cedula']) && !empty($input['cedula'])) {
         if (!validarCedulaEcuador($input['cedula'])) {
-            http_response_code(400);
-            echo json_encode(['error' => 'Número de cédula inválido', 'success' => false]);
-            return;
+            $errors[] = 'Número de cédula inválido';
+        }
+    }
+    
+    // Validar RUC si se proporciona
+    if (isset($input['ruc']) && !empty($input['ruc'])) {
+        if (!validarRUCEcuador($input['ruc'])) {
+            $errors[] = 'Formato de RUC inválido';
         }
     }
     
     // Validar contraseña
-    $passwordValidation = validarContrasena($input['password']);
-    if (!$passwordValidation['valid']) {
+    if (isset($input['password']) && !empty($input['password'])) {
+        $passwordValidation = validarContrasena($input['password']);
+        if (!$passwordValidation['valid']) {
+            $errors[] = $passwordValidation['message'];
+        }
+    }
+    
+    // Validar país
+    if (isset($input['pais']) && !empty($input['pais'])) {
+        $paisesValidos = ['Ecuador', 'Colombia', 'Perú', 'Venezuela', 'Brasil', 'Argentina', 'Chile', 'Uruguay', 'Paraguay', 'Bolivia'];
+        if (!in_array($input['pais'], $paisesValidos)) {
+            $errors[] = 'País no válido';
+        }
+    }
+    
+    // Si hay errores, devolver el primer error
+    if (!empty($errors)) {
         http_response_code(400);
-        echo json_encode(['error' => $passwordValidation['message'], 'success' => false]);
+        echo json_encode(['error' => $errors[0], 'success' => false]);
         return;
     }
     
@@ -150,13 +182,34 @@ function registrarUsuario($authService, $input) {
  */
 function iniciarSesion($authService, $input) {
     $requiredFields = ['email', 'password'];
+    $errors = [];
     
+    // Validar campos requeridos
     foreach ($requiredFields as $field) {
         if (!isset($input[$field]) || empty(trim($input[$field]))) {
-            http_response_code(400);
-            echo json_encode(['error' => "El campo '$field' es requerido"]);
-            return;
+            $errors[] = "El campo '$field' es requerido";
         }
+    }
+    
+    // Validar formato de email
+    if (isset($input['email']) && !empty($input['email'])) {
+        if (!filter_var($input['email'], FILTER_VALIDATE_EMAIL)) {
+            $errors[] = 'Formato de email inválido';
+        }
+    }
+    
+    // Validar longitud de contraseña
+    if (isset($input['password']) && !empty($input['password'])) {
+        if (strlen($input['password']) < 8) {
+            $errors[] = 'La contraseña debe tener al menos 8 caracteres';
+        }
+    }
+    
+    // Si hay errores, devolver el primer error
+    if (!empty($errors)) {
+        http_response_code(400);
+        echo json_encode(['error' => $errors[0], 'success' => false]);
+        return;
     }
     
     $resultado = $authService->iniciarSesion(
@@ -272,6 +325,24 @@ function validarCedulaEcuador($cedula) {
     $digitoReal = intval($cedula[9]);
     
     return $digitoVerificador === $digitoReal;
+}
+
+/**
+ * Validar RUC de Ecuador
+ */
+function validarRUCEcuador($ruc) {
+    $ruc = preg_replace('/\D/', '', $ruc);
+    
+    if (strlen($ruc) !== 13) return false;
+    
+    // Debe terminar en 001
+    if (substr($ruc, -3) !== '001') return false;
+    
+    // Obtener los primeros 10 dígitos para validar
+    $cedula = substr($ruc, 0, 10);
+    
+    // Validar con la función de cédula
+    return validarCedulaEcuador($cedula);
 }
 
 /**
