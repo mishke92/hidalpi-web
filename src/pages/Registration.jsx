@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { User, Building, Mail, Phone, Lock, Eye, EyeOff, CheckCircle, Shield, Users } from 'lucide-react';
+import { isValidEmail, isValidPhone, isValidRUC, isValidCedula, validatePassword, sanitizeString, isValidCompanyName } from '../utils/validation';
+import { useNotification } from '../components/ui/notification';
 
 function Registration() {
   const [accountType, setAccountType] = useState('individual');
@@ -9,6 +11,7 @@ function Registration() {
     // Datos personales
     firstName: '',
     lastName: '',
+    cedula: '',
     email: '',
     phone: '',
     password: '',
@@ -37,6 +40,7 @@ function Registration() {
 
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { showSuccess, showError } = useNotification();
 
   const companyTypes = [
     'Compañía Anónima (C.A.)',
@@ -76,14 +80,48 @@ function Registration() {
     const newErrors = {};
 
     // Validaciones básicas
-    if (!formData.firstName.trim()) newErrors.firstName = 'El nombre es requerido';
-    if (!formData.lastName.trim()) newErrors.lastName = 'El apellido es requerido';
-    if (!formData.email.trim()) newErrors.email = 'El email es requerido';
-    else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Email inválido';
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = 'El nombre es requerido';
+    } else if (formData.firstName.trim().length < 2) {
+      newErrors.firstName = 'El nombre debe tener al menos 2 caracteres';
+    }
+
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = 'El apellido es requerido';
+    } else if (formData.lastName.trim().length < 2) {
+      newErrors.lastName = 'El apellido debe tener al menos 2 caracteres';
+    }
+
+    // Validación de cédula para persona natural
+    if (accountType === 'individual' && formData.cedula.trim()) {
+      if (!isValidCedula(formData.cedula)) {
+        newErrors.cedula = 'Número de cédula inválido';
+      }
+    }
+
+    // Validación de email
+    if (!formData.email.trim()) {
+      newErrors.email = 'El email es requerido';
+    } else if (!isValidEmail(formData.email)) {
+      newErrors.email = 'Formato de email inválido';
+    }
     
-    if (!formData.phone.trim()) newErrors.phone = 'El teléfono es requerido';
-    if (!formData.password) newErrors.password = 'La contraseña es requerida';
-    else if (formData.password.length < 8) newErrors.password = 'La contraseña debe tener al menos 8 caracteres';
+    // Validación de teléfono
+    if (!formData.phone.trim()) {
+      newErrors.phone = 'El teléfono es requerido';
+    } else if (!isValidPhone(formData.phone)) {
+      newErrors.phone = 'Formato de teléfono inválido. Use formato ecuatoriano (ej: 0987654321)';
+    }
+
+    // Validación de contraseña
+    if (!formData.password) {
+      newErrors.password = 'La contraseña es requerida';
+    } else {
+      const passwordValidation = validatePassword(formData.password);
+      if (!passwordValidation.isValid) {
+        newErrors.password = passwordValidation.errors[0]; // Mostrar el primer error
+      }
+    }
     
     if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Las contraseñas no coinciden';
@@ -91,14 +129,40 @@ function Registration() {
 
     // Validaciones para empresa
     if (accountType === 'company') {
-      if (!formData.companyName.trim()) newErrors.companyName = 'El nombre de la empresa es requerido';
-      if (!formData.companyType) newErrors.companyType = 'El tipo de empresa es requerido';
-      if (!formData.taxId.trim()) newErrors.taxId = 'El RUC es requerido';
+      if (!formData.companyName.trim()) {
+        newErrors.companyName = 'El nombre de la empresa es requerido';
+      } else if (!isValidCompanyName(formData.companyName)) {
+        newErrors.companyName = 'Nombre de empresa inválido';
+      }
+
+      if (!formData.companyType) {
+        newErrors.companyType = 'El tipo de empresa es requerido';
+      }
+
+      if (!formData.taxId.trim()) {
+        newErrors.taxId = 'El RUC es requerido';
+      } else if (!isValidRUC(formData.taxId)) {
+        newErrors.taxId = 'Formato de RUC inválido. Debe tener 13 dígitos y terminar en 001';
+      }
+
+      // Validación de teléfono de empresa si se proporciona
+      if (formData.companyPhone && !isValidPhone(formData.companyPhone)) {
+        newErrors.companyPhone = 'Formato de teléfono de empresa inválido';
+      }
+
+      // Validación de email de empresa si se proporciona
+      if (formData.companyEmail && !isValidEmail(formData.companyEmail)) {
+        newErrors.companyEmail = 'Formato de email de empresa inválido';
+      }
     }
 
     // Validaciones de términos
-    if (!formData.terms) newErrors.terms = 'Debe aceptar los términos y condiciones';
-    if (!formData.privacy) newErrors.privacy = 'Debe aceptar la política de privacidad';
+    if (!formData.terms) {
+      newErrors.terms = 'Debe aceptar los términos y condiciones';
+    }
+    if (!formData.privacy) {
+      newErrors.privacy = 'Debe aceptar la política de privacidad';
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -112,59 +176,148 @@ function Registration() {
     setIsSubmitting(true);
     
     try {
-      const userData = {
-        nombre: `${formData.firstName} ${formData.lastName}`,
-        email: formData.email,
-        password: formData.password,
-        pais: formData.country,
-        provincia: formData.state,
-        canton: formData.city
-      };
+      if (accountType === 'individual') {
+        // Registro de persona natural
+        const userData = {
+          nombre: sanitizeString(`${formData.firstName} ${formData.lastName}`),
+          email: sanitizeString(formData.email),
+          telefono: sanitizeString(formData.phone),
+          cedula: sanitizeString(formData.cedula),
+          password: formData.password,
+          pais: sanitizeString(formData.country),
+          provincia: sanitizeString(formData.state),
+          canton: sanitizeString(formData.city),
+          direccion: sanitizeString(formData.street),
+          codigo_postal: sanitizeString(formData.zipCode),
+          notificaciones: formData.notifications,
+          newsletter: formData.newsletter,
+          tipo_usuario: 'cliente'
+        };
 
-      const response = await fetch('http://localhost:8000/backend/api/auth.php?action=register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(userData)
-      });
-
-      const result = await response.json();
-      
-      if (result.success) {
-        alert('¡Registro exitoso! Se ha creado su cuenta correctamente.');
-        // Reset form
-        setFormData({
-          firstName: '',
-          lastName: '',
-          email: '',
-          phone: '',
-          password: '',
-          confirmPassword: '',
-          companyName: '',
-          companyType: '',
-          taxId: '',
-          companyPhone: '',
-          companyEmail: '',
-          street: '',
-          city: '',
-          state: '',
-          zipCode: '',
-          country: 'Ecuador',
-          notifications: true,
-          newsletter: true,
-          terms: false,
-          privacy: false
+        const response = await fetch('http://localhost:8000/backend/api/auth.php?action=register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(userData)
         });
+
+        const result = await response.json();
+        
+        if (result.success) {
+          showSuccess('¡Registro exitoso! Se ha creado su cuenta correctamente.');
+          resetForm();
+        } else {
+          showError(result.error || 'Error al registrar el usuario');
+        }
+
       } else {
-        alert('Error al registrar: ' + result.error);
+        // Registro de empresa
+        const companyData = {
+          // Datos de la empresa
+          nombre: sanitizeString(formData.companyName),
+          tipo_empresa: sanitizeString(formData.companyType),
+          ruc: sanitizeString(formData.taxId),
+          telefono: sanitizeString(formData.companyPhone || formData.phone),
+          email: sanitizeString(formData.companyEmail || formData.email),
+          direccion: sanitizeString(formData.street),
+          ciudad: sanitizeString(formData.city),
+          provincia: sanitizeString(formData.state),
+          canton: sanitizeString(formData.city),
+          pais: sanitizeString(formData.country),
+          codigo_postal: sanitizeString(formData.zipCode),
+          
+          // Datos del representante legal
+          representante_nombre: sanitizeString(`${formData.firstName} ${formData.lastName}`),
+          representante_email: sanitizeString(formData.email),
+          representante_telefono: sanitizeString(formData.phone),
+          representante_cedula: sanitizeString(formData.cedula),
+          password: formData.password,
+          
+          // Configuraciones
+          notificaciones: formData.notifications,
+          newsletter: formData.newsletter
+        };
+
+        // Primero crear la empresa
+        const companyResponse = await fetch('http://localhost:8000/backend/api/companies.php?action=create', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(companyData)
+        });
+
+        const companyResult = await companyResponse.json();
+        
+        if (companyResult.success) {
+          // Luego crear el usuario representante
+          const userData = {
+            nombre: sanitizeString(`${formData.firstName} ${formData.lastName}`),
+            email: sanitizeString(formData.email),
+            telefono: sanitizeString(formData.phone),
+            cedula: sanitizeString(formData.cedula),
+            password: formData.password,
+            pais: sanitizeString(formData.country),
+            provincia: sanitizeString(formData.state),
+            canton: sanitizeString(formData.city),
+            tipo_usuario: 'empresa',
+            empresa_id: companyResult.id
+          };
+
+          const userResponse = await fetch('http://localhost:8000/backend/api/auth.php?action=register', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(userData)
+          });
+
+          const userResult = await userResponse.json();
+          
+          if (userResult.success) {
+            showSuccess('¡Registro exitoso! Se ha creado la empresa y su cuenta correctamente.');
+            resetForm();
+          } else {
+            showError(userResult.error || 'Error al crear el usuario representante');
+          }
+        } else {
+          showError(companyResult.error || 'Error al registrar la empresa');
+        }
       }
     } catch (error) {
       console.error('Error:', error);
-      alert('Error al registrar. Por favor, intente nuevamente.');
+      showError('Error de conexión. Por favor, intente nuevamente.');
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      firstName: '',
+      lastName: '',
+      cedula: '',
+      email: '',
+      phone: '',
+      password: '',
+      confirmPassword: '',
+      companyName: '',
+      companyType: '',
+      taxId: '',
+      companyPhone: '',
+      companyEmail: '',
+      street: '',
+      city: 'Machala',
+      state: 'El Oro',
+      zipCode: '',
+      country: 'Ecuador',
+      notifications: true,
+      newsletter: true,
+      terms: false,
+      privacy: false
+    });
+    setErrors({});
   };
 
   const benefits = [
@@ -280,6 +433,23 @@ function Registration() {
                       />
                       {errors.lastName && <p className="text-red-500 text-xs mt-1">{errors.lastName}</p>}
                     </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Cédula de Identidad {accountType === 'individual' ? '*' : ''}
+                      </label>
+                      <input
+                        type="text"
+                        name="cedula"
+                        value={formData.cedula}
+                        onChange={handleInputChange}
+                        placeholder="1234567890"
+                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
+                          errors.cedula ? 'border-red-500' : 'border-gray-300'
+                        }`}
+                      />
+                      {errors.cedula && <p className="text-red-500 text-xs mt-1">{errors.cedula}</p>}
+                    </div>
                     
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -365,11 +535,48 @@ function Registration() {
                           name="taxId"
                           value={formData.taxId}
                           onChange={handleInputChange}
+                          placeholder="1234567890001"
                           className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
                             errors.taxId ? 'border-red-500' : 'border-gray-300'
                           }`}
                         />
                         {errors.taxId && <p className="text-red-500 text-xs mt-1">{errors.taxId}</p>}
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Teléfono de la Empresa
+                        </label>
+                        <input
+                          type="tel"
+                          name="companyPhone"
+                          value={formData.companyPhone}
+                          onChange={handleInputChange}
+                          placeholder="0987654321"
+                          className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
+                            errors.companyPhone ? 'border-red-500' : 'border-gray-300'
+                          }`}
+                        />
+                        {errors.companyPhone && <p className="text-red-500 text-xs mt-1">{errors.companyPhone}</p>}
+                        <p className="text-xs text-gray-500 mt-1">Opcional - se usará su teléfono personal si no se especifica</p>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Email de la Empresa
+                        </label>
+                        <input
+                          type="email"
+                          name="companyEmail"
+                          value={formData.companyEmail}
+                          onChange={handleInputChange}
+                          placeholder="contacto@empresa.com"
+                          className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
+                            errors.companyEmail ? 'border-red-500' : 'border-gray-300'
+                          }`}
+                        />
+                        {errors.companyEmail && <p className="text-red-500 text-xs mt-1">{errors.companyEmail}</p>}
+                        <p className="text-xs text-gray-500 mt-1">Opcional - se usará su email personal si no se especifica</p>
                       </div>
                     </div>
                   </div>

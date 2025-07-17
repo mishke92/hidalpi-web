@@ -69,14 +69,48 @@ switch ($method) {
  */
 function registrarUsuario($authService, $input) {
     error_log(json_encode($input)); // Esto escribe en el log de PHP
+    
     $requiredFields = ['nombre', 'email', 'password', 'pais', 'provincia', 'canton'];
     
     foreach ($requiredFields as $field) {
         if (!isset($input[$field]) || empty(trim($input[$field]))) {
             http_response_code(400);
-            echo json_encode(['error' => "El campo '$field' es requerido"]);
+            echo json_encode(['error' => "El campo '$field' es requerido", 'success' => false]);
             return;
         }
+    }
+    
+    // Validar email
+    if (!filter_var($input['email'], FILTER_VALIDATE_EMAIL)) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Formato de email inválido', 'success' => false]);
+        return;
+    }
+    
+    // Validar teléfono si se proporciona
+    if (isset($input['telefono']) && !empty($input['telefono'])) {
+        if (!validarTelefonoEcuador($input['telefono'])) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Formato de teléfono inválido', 'success' => false]);
+            return;
+        }
+    }
+    
+    // Validar cédula si se proporciona
+    if (isset($input['cedula']) && !empty($input['cedula'])) {
+        if (!validarCedulaEcuador($input['cedula'])) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Número de cédula inválido', 'success' => false]);
+            return;
+        }
+    }
+    
+    // Validar contraseña
+    $passwordValidation = validarContrasena($input['password']);
+    if (!$passwordValidation['valid']) {
+        http_response_code(400);
+        echo json_encode(['error' => $passwordValidation['message'], 'success' => false]);
+        return;
     }
     
     $resultado = $authService->registrar(
@@ -86,7 +120,14 @@ function registrarUsuario($authService, $input) {
         $input['tipo_usuario'] ?? 'cliente',
         trim($input['pais']),
         trim($input['provincia']),
-        trim($input['canton'])
+        trim($input['canton']),
+        $input['telefono'] ?? '',
+        $input['cedula'] ?? '',
+        $input['direccion'] ?? '',
+        $input['codigo_postal'] ?? '',
+        $input['empresa_id'] ?? null,
+        $input['notificaciones'] ?? true,
+        $input['newsletter'] ?? false
     );
     
     if ($resultado['success']) {
@@ -181,5 +222,78 @@ function obtenerUsuario($authService) {
         'user' => $usuario,
         'success' => true
     ]);
+}
+
+/**
+ * Validar teléfono de Ecuador
+ */
+function validarTelefonoEcuador($telefono) {
+    $telefono = preg_replace('/\D/', '', $telefono);
+    
+    // Móvil: 09XXXXXXXX (10 dígitos)
+    // Fijo: 0XXXXXXX (8 dígitos)
+    // Internacional: 593XXXXXXXXX
+    
+    if (substr($telefono, 0, 3) === '593') {
+        return strlen($telefono) === 12 && preg_match('/^593[2-9]\d{8}$/', $telefono);
+    } elseif (substr($telefono, 0, 1) === '0') {
+        return (strlen($telefono) === 10 && preg_match('/^09\d{8}$/', $telefono)) ||
+               (strlen($telefono) === 8 && preg_match('/^0[2-7]\d{6}$/', $telefono));
+    }
+    
+    return false;
+}
+
+/**
+ * Validar cédula de Ecuador
+ */
+function validarCedulaEcuador($cedula) {
+    $cedula = preg_replace('/\D/', '', $cedula);
+    
+    if (strlen($cedula) !== 10) return false;
+    
+    $provincia = intval(substr($cedula, 0, 2));
+    if ($provincia < 1 || $provincia > 24) return false;
+    
+    $tercerDigito = intval($cedula[2]);
+    if ($tercerDigito >= 6) return false;
+    
+    $suma = 0;
+    for ($i = 0; $i < 9; $i++) {
+        $digito = intval($cedula[$i]);
+        if ($i % 2 === 0) {
+            $digito *= 2;
+            if ($digito > 9) $digito -= 9;
+        }
+        $suma += $digito;
+    }
+    
+    $digitoVerificador = ((ceil($suma / 10) * 10) - $suma) % 10;
+    $digitoReal = intval($cedula[9]);
+    
+    return $digitoVerificador === $digitoReal;
+}
+
+/**
+ * Validar contraseña
+ */
+function validarContrasena($password) {
+    if (strlen($password) < 8) {
+        return ['valid' => false, 'message' => 'La contraseña debe tener al menos 8 caracteres'];
+    }
+    
+    if (!preg_match('/[A-Z]/', $password)) {
+        return ['valid' => false, 'message' => 'La contraseña debe contener al menos una letra mayúscula'];
+    }
+    
+    if (!preg_match('/[a-z]/', $password)) {
+        return ['valid' => false, 'message' => 'La contraseña debe contener al menos una letra minúscula'];
+    }
+    
+    if (!preg_match('/\d/', $password)) {
+        return ['valid' => false, 'message' => 'La contraseña debe contener al menos un número'];
+    }
+    
+    return ['valid' => true, 'message' => 'Contraseña válida'];
 }
 ?>

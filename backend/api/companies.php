@@ -70,9 +70,28 @@ function crearEmpresa($input) {
     foreach ($requiredFields as $field) {
         if (!isset($input[$field]) || empty(trim($input[$field]))) {
             http_response_code(400);
-            echo json_encode(['error' => "El campo '$field' es requerido"]);
+            echo json_encode(['error' => "El campo '$field' es requerido", 'success' => false]);
             return;
         }
+    }
+    
+    // Validaciones adicionales
+    if (!filter_var($input['email'], FILTER_VALIDATE_EMAIL)) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Formato de email inválido', 'success' => false]);
+        return;
+    }
+    
+    if (!validarTelefonoEcuador($input['telefono'])) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Formato de teléfono inválido', 'success' => false]);
+        return;
+    }
+    
+    if (!validarRUCEcuador($input['ruc'])) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Formato de RUC inválido', 'success' => false]);
+        return;
     }
     
     try {
@@ -82,17 +101,28 @@ function crearEmpresa($input) {
         
         if ($stmt->fetch()) {
             http_response_code(400);
-            echo json_encode(['error' => 'El RUC ya está registrado']);
+            echo json_encode(['error' => 'El RUC ya está registrado', 'success' => false]);
+            return;
+        }
+        
+        // Verificar si el email ya existe
+        $stmt = $pdo->prepare("SELECT id FROM empresas WHERE email = ?");
+        $stmt->execute([trim($input['email'])]);
+        
+        if ($stmt->fetch()) {
+            http_response_code(400);
+            echo json_encode(['error' => 'El email ya está registrado', 'success' => false]);
             return;
         }
         
         // Insertar nueva empresa
-        $query = "INSERT INTO empresas (nombre, ruc, telefono, email, direccion, ciudad, provincia, canton, pais, sitio_web, descripcion, servicios_principales) 
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        $query = "INSERT INTO empresas (nombre, tipo_empresa, ruc, telefono, email, direccion, ciudad, provincia, canton, pais, codigo_postal, sitio_web, descripcion, servicios_principales, representante_nombre, representante_email, representante_telefono, representante_cedula) 
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
         $stmt = $pdo->prepare($query);
         $result = $stmt->execute([
             trim($input['nombre']),
+            trim($input['tipo_empresa'] ?? ''),
             trim($input['ruc']),
             trim($input['telefono']),
             trim($input['email']),
@@ -101,9 +131,14 @@ function crearEmpresa($input) {
             trim($input['provincia']),
             trim($input['canton']),
             trim($input['pais'] ?? 'Ecuador'),
+            trim($input['codigo_postal'] ?? ''),
             trim($input['sitio_web'] ?? ''),
             trim($input['descripcion'] ?? ''),
-            trim($input['servicios_principales'] ?? '')
+            trim($input['servicios_principales'] ?? ''),
+            trim($input['representante_nombre'] ?? ''),
+            trim($input['representante_email'] ?? ''),
+            trim($input['representante_telefono'] ?? ''),
+            trim($input['representante_cedula'] ?? '')
         ]);
         
         if ($result) {
@@ -115,12 +150,12 @@ function crearEmpresa($input) {
             ]);
         } else {
             http_response_code(400);
-            echo json_encode(['error' => 'Error al crear la empresa']);
+            echo json_encode(['error' => 'Error al crear la empresa', 'success' => false]);
         }
         
     } catch (Exception $e) {
         http_response_code(500);
-        echo json_encode(['error' => 'Error al crear empresa: ' . $e->getMessage()]);
+        echo json_encode(['error' => 'Error al crear empresa: ' . $e->getMessage(), 'success' => false]);
     }
 }
 
@@ -176,5 +211,65 @@ function obtenerEmpresa($id) {
         http_response_code(500);
         echo json_encode(['error' => 'Error al obtener empresa: ' . $e->getMessage()]);
     }
+}
+
+/**
+ * Validar teléfono de Ecuador
+ */
+function validarTelefonoEcuador($telefono) {
+    $telefono = preg_replace('/\D/', '', $telefono);
+    
+    if (substr($telefono, 0, 3) === '593') {
+        return strlen($telefono) === 12 && preg_match('/^593[2-9]\d{8}$/', $telefono);
+    } elseif (substr($telefono, 0, 1) === '0') {
+        return (strlen($telefono) === 10 && preg_match('/^09\d{8}$/', $telefono)) ||
+               (strlen($telefono) === 8 && preg_match('/^0[2-7]\d{6}$/', $telefono));
+    }
+    
+    return false;
+}
+
+/**
+ * Validar RUC de Ecuador
+ */
+function validarRUCEcuador($ruc) {
+    $ruc = preg_replace('/\D/', '', $ruc);
+    
+    if (strlen($ruc) !== 13) return false;
+    
+    if (!preg_match('/001$/', $ruc)) return false;
+    
+    $cedula = substr($ruc, 0, 10);
+    return validarCedulaEcuador($cedula);
+}
+
+/**
+ * Validar cédula de Ecuador
+ */
+function validarCedulaEcuador($cedula) {
+    $cedula = preg_replace('/\D/', '', $cedula);
+    
+    if (strlen($cedula) !== 10) return false;
+    
+    $provincia = intval(substr($cedula, 0, 2));
+    if ($provincia < 1 || $provincia > 24) return false;
+    
+    $tercerDigito = intval($cedula[2]);
+    if ($tercerDigito >= 6) return false;
+    
+    $suma = 0;
+    for ($i = 0; $i < 9; $i++) {
+        $digito = intval($cedula[$i]);
+        if ($i % 2 === 0) {
+            $digito *= 2;
+            if ($digito > 9) $digito -= 9;
+        }
+        $suma += $digito;
+    }
+    
+    $digitoVerificador = ((ceil($suma / 10) * 10) - $suma) % 10;
+    $digitoReal = intval($cedula[9]);
+    
+    return $digitoVerificador === $digitoReal;
 }
 ?>
