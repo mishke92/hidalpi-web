@@ -68,10 +68,11 @@ switch ($method) {
  * Registrar nuevo usuario
  */
 function registrarUsuario($authService, $input) {
-    error_log(json_encode($input)); // Esto escribe en el log de PHP
+    error_log(json_encode($input)); // Log para debugging
     
-    $requiredFields = ['nombre', 'email', 'password', 'pais', 'provincia', 'canton'];
+    $requiredFields = ['nombre', 'email', 'password', 'tipo_usuario'];
     
+    // Validar campos obligatorios básicos
     foreach ($requiredFields as $field) {
         if (!isset($input[$field]) || empty(trim($input[$field]))) {
             http_response_code(400);
@@ -80,10 +81,40 @@ function registrarUsuario($authService, $input) {
         }
     }
     
-    // Validar email
-    if (!filter_var($input['email'], FILTER_VALIDATE_EMAIL)) {
+    // Validar campos de ubicación si se proporcionan
+    $locationFields = ['pais', 'provincia', 'canton'];
+    foreach ($locationFields as $field) {
+        if (isset($input[$field]) && empty(trim($input[$field]))) {
+            http_response_code(400);
+            echo json_encode(['error' => "El campo '$field' es requerido", 'success' => false]);
+            return;
+        }
+    }
+    
+    // Sanitizar entrada
+    $nombre = sanitizeInput($input['nombre']);
+    $email = sanitizeInput($input['email']);
+    $tipo_usuario = sanitizeInput($input['tipo_usuario']);
+    
+    // Validar nombre
+    if (strlen($nombre) < 2 || strlen($nombre) > 100) {
         http_response_code(400);
-        echo json_encode(['error' => 'Formato de email inválido', 'success' => false]);
+        echo json_encode(['error' => 'El nombre debe tener entre 2 y 100 caracteres', 'success' => false]);
+        return;
+    }
+    
+    // Validar email
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        http_response_code(400);
+        echo json_encode(['error' => 'El formato del email no es válido', 'success' => false]);
+        return;
+    }
+    
+    // Validar tipo de usuario
+    $validUserTypes = ['cliente', 'admin', 'abogado'];
+    if (!in_array($tipo_usuario, $validUserTypes)) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Tipo de usuario no válido', 'success' => false]);
         return;
     }
     
@@ -91,7 +122,7 @@ function registrarUsuario($authService, $input) {
     if (isset($input['telefono']) && !empty($input['telefono'])) {
         if (!validarTelefonoEcuador($input['telefono'])) {
             http_response_code(400);
-            echo json_encode(['error' => 'Formato de teléfono inválido', 'success' => false]);
+            echo json_encode(['error' => 'El formato del teléfono no es válido para Ecuador', 'success' => false]);
             return;
         }
     }
@@ -100,27 +131,38 @@ function registrarUsuario($authService, $input) {
     if (isset($input['cedula']) && !empty($input['cedula'])) {
         if (!validarCedulaEcuador($input['cedula'])) {
             http_response_code(400);
-            echo json_encode(['error' => 'Número de cédula inválido', 'success' => false]);
+            echo json_encode(['error' => 'El número de cédula no es válido', 'success' => false]);
             return;
         }
     }
     
-    // Validar contraseña
-    $passwordValidation = validarContrasena($input['password']);
+    // Validar contraseña con políticas estrictas
+    $passwordValidation = validarContrasenaEstricta($input['password']);
     if (!$passwordValidation['valid']) {
         http_response_code(400);
         echo json_encode(['error' => $passwordValidation['message'], 'success' => false]);
         return;
     }
     
+    // Validar ubicación si se proporciona
+    $pais = isset($input['pais']) ? sanitizeInput($input['pais']) : '';
+    $provincia = isset($input['provincia']) ? sanitizeInput($input['provincia']) : '';
+    $canton = isset($input['canton']) ? sanitizeInput($input['canton']) : '';
+    
+    if (!empty($pais) && !validarUbicacion($pais, $provincia, $canton)) {
+        http_response_code(400);
+        echo json_encode(['error' => 'La ubicación seleccionada no es válida', 'success' => false]);
+        return;
+    }
+    
     $resultado = $authService->registrar(
-        trim($input['nombre']),
-        trim($input['email']),
+        $nombre,
+        $email,
         $input['password'],
-        $input['tipo_usuario'] ?? 'cliente',
-        trim($input['pais']),
-        trim($input['provincia']),
-        trim($input['canton']),
+        $tipo_usuario,
+        $pais,
+        $provincia,
+        $canton,
         $input['telefono'] ?? '',
         $input['cedula'] ?? '',
         $input['direccion'] ?? '',
@@ -154,13 +196,30 @@ function iniciarSesion($authService, $input) {
     foreach ($requiredFields as $field) {
         if (!isset($input[$field]) || empty(trim($input[$field]))) {
             http_response_code(400);
-            echo json_encode(['error' => "El campo '$field' es requerido"]);
+            echo json_encode(['error' => "El campo '$field' es requerido", 'success' => false]);
             return;
         }
     }
     
+    // Sanitizar entrada
+    $email = sanitizeInput($input['email']);
+    
+    // Validar email
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        http_response_code(400);
+        echo json_encode(['error' => 'El formato del email no es válido', 'success' => false]);
+        return;
+    }
+    
+    // Validar contraseña mínima
+    if (strlen($input['password']) < 6) {
+        http_response_code(400);
+        echo json_encode(['error' => 'La contraseña debe tener al menos 6 caracteres', 'success' => false]);
+        return;
+    }
+    
     $resultado = $authService->iniciarSesion(
-        trim($input['email']),
+        $email,
         $input['password']
     );
     
@@ -275,7 +334,90 @@ function validarCedulaEcuador($cedula) {
 }
 
 /**
- * Validar contraseña
+ * Validar contraseña con políticas estrictas
+ */
+function validarContrasenaEstricta($password) {
+    $errors = [];
+    
+    if (strlen($password) < 8) {
+        $errors[] = 'La contraseña debe tener al menos 8 caracteres';
+    }
+    
+    if (!preg_match('/[A-Z]/', $password)) {
+        $errors[] = 'La contraseña debe contener al menos una letra mayúscula';
+    }
+    
+    if (!preg_match('/[a-z]/', $password)) {
+        $errors[] = 'La contraseña debe contener al menos una letra minúscula';
+    }
+    
+    if (!preg_match('/\d/', $password)) {
+        $errors[] = 'La contraseña debe contener al menos un número';
+    }
+    
+    if (!preg_match('/[!@#$%^&*(),.?":{}|<>]/', $password)) {
+        $errors[] = 'La contraseña debe contener al menos un carácter especial';
+    }
+    
+    return [
+        'valid' => count($errors) === 0,
+        'message' => count($errors) > 0 ? implode(', ', $errors) : 'Contraseña válida'
+    ];
+}
+
+/**
+ * Sanitizar entrada de usuario
+ */
+function sanitizeInput($input) {
+    if (is_string($input)) {
+        return trim(htmlspecialchars($input, ENT_QUOTES, 'UTF-8'));
+    }
+    return $input;
+}
+
+/**
+ * Validar ubicación (país, provincia, cantón)
+ */
+function validarUbicacion($pais, $provincia, $canton) {
+    // Ubicaciones válidas para Ecuador
+    $ubicacionesValidas = [
+        'Ecuador' => [
+            'El Oro' => ['Machala', 'Pasaje', 'Santa Rosa', 'Huaquillas', 'Arenillas'],
+            'Guayas' => ['Guayaquil', 'Milagro', 'Durán', 'Samborondón'],
+            'Pichincha' => ['Quito', 'Cayambe', 'Mejía', 'Pedro Moncayo'],
+            'Manabí' => ['Portoviejo', 'Manta', 'Chone', 'Montecristi'],
+            'Azuay' => ['Cuenca', 'Gualaceo', 'Paute', 'Chordeleg']
+        ],
+        'Colombia' => [
+            'Antioquia' => ['Medellín', 'Bello', 'Itagüí', 'Envigado'],
+            'Bogotá D.C.' => ['Bogotá'],
+            'Valle del Cauca' => ['Cali', 'Palmira', 'Buenaventura', 'Cartago']
+        ],
+        'Perú' => [
+            'Lima' => ['Lima', 'Callao', 'San Juan de Lurigancho', 'San Martín de Porres'],
+            'Cusco' => ['Cusco', 'Wanchaq', 'Santiago', 'San Sebastián'],
+            'Arequipa' => ['Arequipa', 'Cayma', 'Cerro Colorado', 'Yanahuara']
+        ],
+        'Venezuela' => [
+            'Distrito Capital' => ['Caracas'],
+            'Miranda' => ['Los Teques', 'Guarenas', 'Guatire', 'Petare'],
+            'Zulia' => ['Maracaibo', 'San Francisco', 'Ciudad Ojeda', 'Cabimas']
+        ]
+    ];
+    
+    if (!isset($ubicacionesValidas[$pais])) {
+        return false;
+    }
+    
+    if (!isset($ubicacionesValidas[$pais][$provincia])) {
+        return false;
+    }
+    
+    return in_array($canton, $ubicacionesValidas[$pais][$provincia]);
+}
+
+/**
+ * Validar contraseña (versión original - mantener para compatibilidad)
  */
 function validarContrasena($password) {
     if (strlen($password) < 8) {

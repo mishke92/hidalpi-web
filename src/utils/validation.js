@@ -143,19 +143,27 @@ export const validatePassword = (password) => {
 };
 
 /**
- * Validates required fields
+ * Validates required fields with custom error messages
  * @param {object} data - Data object to validate
- * @param {array} requiredFields - Array of required field names
+ * @param {array|object} requiredFields - Array of required field names or object with field names and custom messages
  * @returns {object} - Validation result with isValid boolean and errors object
  */
 export const validateRequiredFields = (data, requiredFields) => {
   const errors = {};
   
-  requiredFields.forEach(field => {
-    if (!data[field] || (typeof data[field] === 'string' && !data[field].trim())) {
-      errors[field] = `El campo '${field}' es requerido`;
-    }
-  });
+  if (Array.isArray(requiredFields)) {
+    requiredFields.forEach(field => {
+      if (!data[field] || (typeof data[field] === 'string' && !data[field].trim())) {
+        errors[field] = `El campo '${field}' es requerido`;
+      }
+    });
+  } else {
+    Object.keys(requiredFields).forEach(field => {
+      if (!data[field] || (typeof data[field] === 'string' && !data[field].trim())) {
+        errors[field] = requiredFields[field] || `El campo '${field}' es requerido`;
+      }
+    });
+  }
   
   return {
     isValid: Object.keys(errors).length === 0,
@@ -220,4 +228,175 @@ export const formatRUC = (ruc) => {
   }
   
   return ruc;
+};
+
+/**
+ * Validates user type selection
+ * @param {string} userType - User type to validate
+ * @returns {boolean} - True if valid user type
+ */
+export const isValidUserType = (userType) => {
+  const validTypes = ['cliente', 'admin', 'abogado'];
+  return validTypes.includes(userType);
+};
+
+/**
+ * Validates form data comprehensively
+ * @param {object} formData - Form data to validate
+ * @param {object} validationRules - Validation rules configuration
+ * @returns {object} - Validation result with isValid boolean and errors object
+ */
+export const validateFormData = (formData, validationRules) => {
+  const errors = {};
+  
+  // Required fields validation
+  if (validationRules.required) {
+    const requiredValidation = validateRequiredFields(formData, validationRules.required);
+    if (!requiredValidation.isValid) {
+      Object.assign(errors, requiredValidation.errors);
+    }
+  }
+  
+  // Email validation
+  if (validationRules.email && formData.email) {
+    if (!isValidEmail(formData.email)) {
+      errors.email = 'El formato del email no es válido';
+    }
+  }
+  
+  // Password validation
+  if (validationRules.password && formData.password) {
+    const passwordValidation = validatePassword(formData.password);
+    if (!passwordValidation.isValid) {
+      errors.password = passwordValidation.errors.join(', ');
+    }
+  }
+  
+  // Phone validation
+  if (validationRules.phone && formData.phone) {
+    if (!isValidPhone(formData.phone)) {
+      errors.phone = 'El formato del teléfono no es válido para Ecuador';
+    }
+  }
+  
+  // Cedula validation
+  if (validationRules.cedula && formData.cedula) {
+    if (!isValidCedula(formData.cedula)) {
+      errors.cedula = 'El número de cédula no es válido';
+    }
+  }
+  
+  // User type validation
+  if (validationRules.userType && formData.userType) {
+    if (!isValidUserType(formData.userType)) {
+      errors.userType = 'El tipo de usuario seleccionado no es válido';
+    }
+  }
+  
+  return {
+    isValid: Object.keys(errors).length === 0,
+    errors: errors
+  };
+};
+
+/**
+ * Validates location selection (country, province, canton)
+ * @param {string} country - Selected country
+ * @param {string} province - Selected province
+ * @param {string} canton - Selected canton
+ * @param {object} locationData - Available location data
+ * @returns {object} - Validation result with isValid boolean and errors object
+ */
+export const validateLocation = (country, province, canton, locationData) => {
+  const errors = {};
+  
+  if (!country) {
+    errors.country = 'Debe seleccionar un país';
+  } else if (!locationData[country]) {
+    errors.country = 'El país seleccionado no es válido';
+  }
+  
+  if (!province) {
+    errors.province = 'Debe seleccionar una provincia/estado';
+  } else if (country && locationData[country] && !locationData[country][province]) {
+    errors.province = 'La provincia/estado seleccionado no es válido';
+  }
+  
+  if (!canton) {
+    errors.canton = 'Debe seleccionar un cantón';
+  } else if (country && province && locationData[country] && locationData[country][province] && !locationData[country][province].includes(canton)) {
+    errors.canton = 'El cantón seleccionado no es válido';
+  }
+  
+  return {
+    isValid: Object.keys(errors).length === 0,
+    errors: errors
+  };
+};
+
+/**
+ * Validates password confirmation
+ * @param {string} password - Original password
+ * @param {string} confirmPassword - Confirmation password
+ * @returns {object} - Validation result with isValid boolean and error message
+ */
+export const validatePasswordConfirmation = (password, confirmPassword) => {
+  if (password !== confirmPassword) {
+    return {
+      isValid: false,
+      error: 'Las contraseñas no coinciden'
+    };
+  }
+  
+  return {
+    isValid: true,
+    error: null
+  };
+};
+
+/**
+ * Validates message length for contact forms
+ * @param {string} message - Message to validate
+ * @param {number} minLength - Minimum length required
+ * @param {number} maxLength - Maximum length allowed
+ * @returns {object} - Validation result with isValid boolean and error message
+ */
+export const validateMessageLength = (message, minLength = 10, maxLength = 1000) => {
+  const errors = [];
+  
+  if (!message || !message.trim()) {
+    errors.push('El mensaje es requerido');
+  } else {
+    const trimmedMessage = message.trim();
+    if (trimmedMessage.length < minLength) {
+      errors.push(`El mensaje debe tener al menos ${minLength} caracteres`);
+    }
+    if (trimmedMessage.length > maxLength) {
+      errors.push(`El mensaje no puede exceder ${maxLength} caracteres`);
+    }
+  }
+  
+  return {
+    isValid: errors.length === 0,
+    errors: errors
+  };
+};
+
+/**
+ * Validates terms and conditions acceptance
+ * @param {boolean} accepted - Whether terms are accepted
+ * @returns {object} - Validation result with isValid boolean and error message
+ */
+export const validateTermsAcceptance = (accepted) => {
+  if (!accepted) {
+    return {
+      isValid: false,
+      error: 'Debe aceptar los términos y condiciones'
+    };
+  }
+  
+  return {
+    isValid: true,
+    error: null
+  };
 };

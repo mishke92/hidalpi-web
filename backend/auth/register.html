@@ -81,49 +81,141 @@
             <div id="alert-container"></div>
             
             <form id="registerForm">
-                <div class="mb-3">
-                    <label for="nombre" class="form-label">
-                        <i class="fas fa-user me-2"></i>
-                        Nombre Completo
-                    </label>
-                    <input type="text" class="form-control" id="nombre" name="nombre" required>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="nombre" class="form-label">
+                                <i class="fas fa-user me-2"></i>
+                                Nombre Completo *
+                            </label>
+                            <input type="text" class="form-control" id="nombre" name="nombre" required>
+                            <div class="invalid-feedback"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="email" class="form-label">
+                                <i class="fas fa-envelope me-2"></i>
+                                Correo Electrónico *
+                            </label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                            <div class="invalid-feedback"></div>
+                        </div>
+                    </div>
                 </div>
                 
-                <div class="mb-3">
-                    <label for="email" class="form-label">
-                        <i class="fas fa-envelope me-2"></i>
-                        Correo Electrónico
-                    </label>
-                    <input type="email" class="form-control" id="email" name="email" required>
-                </div>
-                
-                <div class="mb-3">
-                    <label for="password" class="form-label">
-                        <i class="fas fa-lock me-2"></i>
-                        Contraseña
-                    </label>
-                    <input type="password" class="form-control" id="password" name="password" required>
-                    <small class="form-text text-muted">Mínimo 8 caracteres</small>
-                </div>
-                
-                <div class="mb-3">
-                    <label for="password_confirm" class="form-label">
-                        <i class="fas fa-lock me-2"></i>
-                        Confirmar Contraseña
-                    </label>
-                    <input type="password" class="form-control" id="password_confirm" name="password_confirm" required>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="password" class="form-label">
+                                <i class="fas fa-lock me-2"></i>
+                                Contraseña *
+                            </label>
+                            <input type="password" class="form-control" id="password" name="password" required>
+                            <small class="form-text text-muted">Mínimo 8 caracteres, incluir mayúsculas, minúsculas, números y símbolos</small>
+                            <div class="invalid-feedback"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="password_confirm" class="form-label">
+                                <i class="fas fa-lock me-2"></i>
+                                Confirmar Contraseña *
+                            </label>
+                            <input type="password" class="form-control" id="password_confirm" name="password_confirm" required>
+                            <div class="invalid-feedback"></div>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="mb-3">
                     <label for="tipo_usuario" class="form-label">
                         <i class="fas fa-user-tag me-2"></i>
-                        Tipo de Usuario
+                        Tipo de Usuario *
                     </label>
                     <select class="form-control" id="tipo_usuario" name="tipo_usuario" required>
                         <option value="">Seleccionar...</option>
                         <option value="cliente">Cliente</option>
+                        <option value="abogado">Abogado</option>
                         <option value="admin">Administrador</option>
                     </select>
+                    <div class="invalid-feedback"></div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="pais" class="form-label">
+                                <i class="fas fa-globe me-2"></i>
+                                País *
+                            </label>
+                            <select class="form-control" id="pais" name="pais" required>
+                                <option value="">Seleccionar...</option>
+                                <option value="Ecuador" selected>Ecuador</option>
+                                <option value="Colombia">Colombia</option>
+                                <option value="Perú">Perú</option>
+                                <option value="Venezuela">Venezuela</option>
+                            </select>
+                            <div class="invalid-feedback"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="provincia" class="form-label">
+                                <i class="fas fa-map-marker-alt me-2"></i>
+                                Provincia *
+                            </label>
+                            <select class="form-control" id="provincia" name="provincia" required>
+                                <option value="">Seleccionar...</option>
+                                <option value="El Oro" selected>El Oro</option>
+                            </select>
+                            <div class="invalid-feedback"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="canton" class="form-label">
+                                <i class="fas fa-map-pin me-2"></i>
+                                Cantón *
+                            </label>
+                            <select class="form-control" id="canton" name="canton" required>
+                                <option value="">Seleccionar...</option>
+                                <option value="Machala" selected>Machala</option>
+                            </select>
+                            <div class="invalid-feedback"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="telefono" class="form-label">
+                                <i class="fas fa-phone me-2"></i>
+                                Teléfono
+                            </label>
+                            <input type="tel" class="form-control" id="telefono" name="telefono" placeholder="09XXXXXXXX">
+                            <div class="invalid-feedback"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="cedula" class="form-label">
+                                <i class="fas fa-id-card me-2"></i>
+                                Cédula
+                            </label>
+                            <input type="text" class="form-control" id="cedula" name="cedula" placeholder="1234567890">
+                            <div class="invalid-feedback"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="direccion" class="form-label">
+                        <i class="fas fa-home me-2"></i>
+                        Dirección
+                    </label>
+                    <textarea class="form-control" id="direccion" name="direccion" rows="2" placeholder="Dirección completa (opcional)"></textarea>
                 </div>
                 
                 <div class="mb-3 form-check">
@@ -131,6 +223,7 @@
                     <label class="form-check-label" for="terms">
                         Acepto los <a href="#" class="text-decoration-none">términos y condiciones</a>
                     </label>
+                    <div class="invalid-feedback"></div>
                 </div>
                 
                 <button type="submit" class="btn btn-primary" id="registerBtn">
@@ -150,34 +243,246 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Validation utilities
+        const validateEmail = (email) => {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
+        };
+        
+        const validatePassword = (password) => {
+            const errors = [];
+            
+            if (password.length < 8) {
+                errors.push('La contraseña debe tener al menos 8 caracteres');
+            }
+            
+            if (!/[A-Z]/.test(password)) {
+                errors.push('La contraseña debe contener al menos una letra mayúscula');
+            }
+            
+            if (!/[a-z]/.test(password)) {
+                errors.push('La contraseña debe contener al menos una letra minúscula');
+            }
+            
+            if (!/\d/.test(password)) {
+                errors.push('La contraseña debe contener al menos un número');
+            }
+            
+            if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+                errors.push('La contraseña debe contener al menos un carácter especial');
+            }
+            
+            return {
+                isValid: errors.length === 0,
+                errors: errors
+            };
+        };
+        
+        const validatePhone = (phone) => {
+            const cleanPhone = phone.replace(/\D/g, '');
+            
+            if (cleanPhone.startsWith('593')) {
+                return cleanPhone.length === 12 && /^593[2-9]\d{8}$/.test(cleanPhone);
+            } else if (cleanPhone.startsWith('0')) {
+                return (cleanPhone.length === 10 && /^09\d{8}$/.test(cleanPhone)) ||
+                       (cleanPhone.length === 8 && /^0[2-7]\d{6}$/.test(cleanPhone));
+            }
+            
+            return false;
+        };
+        
+        const validateCedula = (cedula) => {
+            const cleanCedula = cedula.replace(/\D/g, '');
+            
+            if (cleanCedula.length !== 10) return false;
+            
+            const provincia = parseInt(cleanCedula.substring(0, 2));
+            if (provincia < 1 || provincia > 24) return false;
+            
+            const thirdDigit = parseInt(cleanCedula.charAt(2));
+            if (thirdDigit >= 6) return false;
+            
+            let sum = 0;
+            for (let i = 0; i < 9; i++) {
+                let digit = parseInt(cleanCedula.charAt(i));
+                if (i % 2 === 0) {
+                    digit *= 2;
+                    if (digit > 9) digit -= 9;
+                }
+                sum += digit;
+            }
+            
+            const calculatedCheckDigit = ((Math.ceil(sum / 10) * 10) - sum) % 10;
+            const actualCheckDigit = parseInt(cleanCedula.charAt(9));
+            
+            return calculatedCheckDigit === actualCheckDigit;
+        };
+        
+        const showFieldError = (fieldId, message) => {
+            const field = document.getElementById(fieldId);
+            const feedback = field.parentElement.querySelector('.invalid-feedback');
+            
+            field.classList.add('is-invalid');
+            feedback.textContent = message;
+            feedback.style.display = 'block';
+        };
+        
+        const clearFieldError = (fieldId) => {
+            const field = document.getElementById(fieldId);
+            const feedback = field.parentElement.querySelector('.invalid-feedback');
+            
+            field.classList.remove('is-invalid');
+            feedback.textContent = '';
+            feedback.style.display = 'none';
+        };
+        
+        const clearAllErrors = () => {
+            const fields = ['nombre', 'email', 'password', 'password_confirm', 'tipo_usuario', 'pais', 'provincia', 'canton', 'telefono', 'cedula', 'terms'];
+            fields.forEach(fieldId => clearFieldError(fieldId));
+        };
+        
+        const validateForm = () => {
+            clearAllErrors();
+            
+            let isValid = true;
+            const formData = {};
+            
+            // Get form data
+            formData.nombre = document.getElementById('nombre').value.trim();
+            formData.email = document.getElementById('email').value.trim();
+            formData.password = document.getElementById('password').value;
+            formData.password_confirm = document.getElementById('password_confirm').value;
+            formData.tipo_usuario = document.getElementById('tipo_usuario').value;
+            formData.pais = document.getElementById('pais').value;
+            formData.provincia = document.getElementById('provincia').value;
+            formData.canton = document.getElementById('canton').value;
+            formData.telefono = document.getElementById('telefono').value.trim();
+            formData.cedula = document.getElementById('cedula').value.trim();
+            formData.terms = document.getElementById('terms').checked;
+            
+            // Required fields validation
+            if (!formData.nombre) {
+                showFieldError('nombre', 'El nombre es requerido');
+                isValid = false;
+            } else if (formData.nombre.length < 2) {
+                showFieldError('nombre', 'El nombre debe tener al menos 2 caracteres');
+                isValid = false;
+            }
+            
+            if (!formData.email) {
+                showFieldError('email', 'El email es requerido');
+                isValid = false;
+            } else if (!validateEmail(formData.email)) {
+                showFieldError('email', 'El formato del email no es válido');
+                isValid = false;
+            }
+            
+            if (!formData.password) {
+                showFieldError('password', 'La contraseña es requerida');
+                isValid = false;
+            } else {
+                const passwordValidation = validatePassword(formData.password);
+                if (!passwordValidation.isValid) {
+                    showFieldError('password', passwordValidation.errors[0]);
+                    isValid = false;
+                }
+            }
+            
+            if (!formData.password_confirm) {
+                showFieldError('password_confirm', 'La confirmación de contraseña es requerida');
+                isValid = false;
+            } else if (formData.password !== formData.password_confirm) {
+                showFieldError('password_confirm', 'Las contraseñas no coinciden');
+                isValid = false;
+            }
+            
+            if (!formData.tipo_usuario) {
+                showFieldError('tipo_usuario', 'El tipo de usuario es requerido');
+                isValid = false;
+            }
+            
+            if (!formData.pais) {
+                showFieldError('pais', 'El país es requerido');
+                isValid = false;
+            }
+            
+            if (!formData.provincia) {
+                showFieldError('provincia', 'La provincia es requerida');
+                isValid = false;
+            }
+            
+            if (!formData.canton) {
+                showFieldError('canton', 'El cantón es requerido');
+                isValid = false;
+            }
+            
+            // Optional fields validation
+            if (formData.telefono && !validatePhone(formData.telefono)) {
+                showFieldError('telefono', 'El formato del teléfono no es válido para Ecuador');
+                isValid = false;
+            }
+            
+            if (formData.cedula && !validateCedula(formData.cedula)) {
+                showFieldError('cedula', 'El número de cédula no es válido');
+                isValid = false;
+            }
+            
+            if (!formData.terms) {
+                showFieldError('terms', 'Debe aceptar los términos y condiciones');
+                isValid = false;
+            }
+            
+            return { isValid, formData };
+        };
+        
+        // Real-time validation
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('registerForm');
+            const fields = form.querySelectorAll('input, select');
+            
+            fields.forEach(field => {
+                field.addEventListener('input', function() {
+                    if (field.classList.contains('is-invalid')) {
+                        clearFieldError(field.id);
+                    }
+                });
+                
+                field.addEventListener('blur', function() {
+                    // Validate individual field on blur
+                    if (field.id === 'email' && field.value && !validateEmail(field.value)) {
+                        showFieldError('email', 'El formato del email no es válido');
+                    } else if (field.id === 'password' && field.value) {
+                        const passwordValidation = validatePassword(field.value);
+                        if (!passwordValidation.isValid) {
+                            showFieldError('password', passwordValidation.errors[0]);
+                        }
+                    } else if (field.id === 'password_confirm' && field.value) {
+                        const password = document.getElementById('password').value;
+                        if (password !== field.value) {
+                            showFieldError('password_confirm', 'Las contraseñas no coinciden');
+                        }
+                    } else if (field.id === 'telefono' && field.value && !validatePhone(field.value)) {
+                        showFieldError('telefono', 'El formato del teléfono no es válido para Ecuador');
+                    } else if (field.id === 'cedula' && field.value && !validateCedula(field.value)) {
+                        showFieldError('cedula', 'El número de cédula no es válido');
+                    }
+                });
+            });
+        });
+        
         document.getElementById('registerForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
+            const validation = validateForm();
+            if (!validation.isValid) {
+                showAlert('danger', 'Por favor, corrija los errores antes de continuar');
+                return;
+            }
+            
             const registerBtn = document.getElementById('registerBtn');
             const alertContainer = document.getElementById('alert-container');
-            const nombre = document.getElementById('nombre').value;
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const password_confirm = document.getElementById('password_confirm').value;
-            const tipo_usuario = document.getElementById('tipo_usuario').value;
             
-            // Validaciones
-            if (password !== password_confirm) {
-                showAlert('danger', 'Las contraseñas no coinciden');
-                return;
-            }
-            
-            if (password.length < 8) {
-                showAlert('danger', 'La contraseña debe tener al menos 8 caracteres');
-                return;
-            }
-            
-            if (!tipo_usuario) {
-                showAlert('danger', 'Por favor selecciona un tipo de usuario');
-                return;
-            }
-            
-            // Mostrar loading
+            // Show loading state
             registerBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Registrando...';
             registerBtn.disabled = true;
             
@@ -187,15 +492,19 @@
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ nombre, email, password, tipo_usuario })
+                    body: JSON.stringify(validation.formData)
                 });
+                
+                if (!response.ok) {
+                    throw new Error(`Error ${response.status}: ${response.statusText}`);
+                }
                 
                 const data = await response.json();
                 
                 if (data.success) {
                     showAlert('success', data.message + ' Redirigiendo al login...');
                     
-                    // Redirigir al login después de 2 segundos
+                    // Redirect to login after 2 seconds
                     setTimeout(() => {
                         window.location.href = 'login.html';
                     }, 2000);
@@ -204,10 +513,10 @@
                 }
                 
             } catch (error) {
-                showAlert('danger', 'Error de conexión. Intenta nuevamente.');
                 console.error('Error:', error);
+                showAlert('danger', 'Error de conexión. Verifique su conexión a internet e intente nuevamente.');
             } finally {
-                // Restaurar botón
+                // Restore button
                 registerBtn.innerHTML = '<i class="fas fa-user-plus me-2"></i>Registrarse';
                 registerBtn.disabled = false;
             }
@@ -235,7 +544,7 @@
             }, 5000);
         }
         
-        // Verificar si ya está logueado
+        // Check if already logged in
         window.addEventListener('load', async function() {
             try {
                 const response = await fetch('../api/auth.php?action=status');

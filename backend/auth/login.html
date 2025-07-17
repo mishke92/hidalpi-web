@@ -80,17 +80,19 @@
                 <div class="mb-3">
                     <label for="email" class="form-label">
                         <i class="fas fa-envelope me-2"></i>
-                        Correo Electrónico
+                        Correo Electrónico *
                     </label>
                     <input type="email" class="form-control" id="email" name="email" required>
+                    <div class="invalid-feedback"></div>
                 </div>
                 
                 <div class="mb-3">
                     <label for="password" class="form-label">
                         <i class="fas fa-lock me-2"></i>
-                        Contraseña
+                        Contraseña *
                     </label>
                     <input type="password" class="form-control" id="password" name="password" required>
+                    <div class="invalid-feedback"></div>
                 </div>
                 
                 <div class="mb-3 form-check">
@@ -123,15 +125,101 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Validation utilities
+        const validateEmail = (email) => {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
+        };
+        
+        const showFieldError = (fieldId, message) => {
+            const field = document.getElementById(fieldId);
+            const feedback = field.parentElement.querySelector('.invalid-feedback');
+            
+            field.classList.add('is-invalid');
+            feedback.textContent = message;
+            feedback.style.display = 'block';
+        };
+        
+        const clearFieldError = (fieldId) => {
+            const field = document.getElementById(fieldId);
+            const feedback = field.parentElement.querySelector('.invalid-feedback');
+            
+            field.classList.remove('is-invalid');
+            feedback.textContent = '';
+            feedback.style.display = 'none';
+        };
+        
+        const clearAllErrors = () => {
+            const fields = ['email', 'password'];
+            fields.forEach(fieldId => clearFieldError(fieldId));
+        };
+        
+        const validateForm = () => {
+            clearAllErrors();
+            
+            let isValid = true;
+            const formData = {};
+            
+            // Get form data
+            formData.email = document.getElementById('email').value.trim();
+            formData.password = document.getElementById('password').value;
+            
+            // Validation
+            if (!formData.email) {
+                showFieldError('email', 'El email es requerido');
+                isValid = false;
+            } else if (!validateEmail(formData.email)) {
+                showFieldError('email', 'El formato del email no es válido');
+                isValid = false;
+            }
+            
+            if (!formData.password) {
+                showFieldError('password', 'La contraseña es requerida');
+                isValid = false;
+            } else if (formData.password.length < 6) {
+                showFieldError('password', 'La contraseña debe tener al menos 6 caracteres');
+                isValid = false;
+            }
+            
+            return { isValid, formData };
+        };
+        
+        // Real-time validation
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('loginForm');
+            const fields = form.querySelectorAll('input[type="email"], input[type="password"]');
+            
+            fields.forEach(field => {
+                field.addEventListener('input', function() {
+                    if (field.classList.contains('is-invalid')) {
+                        clearFieldError(field.id);
+                    }
+                });
+                
+                field.addEventListener('blur', function() {
+                    // Validate individual field on blur
+                    if (field.id === 'email' && field.value && !validateEmail(field.value)) {
+                        showFieldError('email', 'El formato del email no es válido');
+                    } else if (field.id === 'password' && field.value && field.value.length < 6) {
+                        showFieldError('password', 'La contraseña debe tener al menos 6 caracteres');
+                    }
+                });
+            });
+        });
+        
         document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
+            const validation = validateForm();
+            if (!validation.isValid) {
+                showAlert('danger', 'Por favor, corrija los errores antes de continuar');
+                return;
+            }
+            
             const loginBtn = document.getElementById('loginBtn');
             const alertContainer = document.getElementById('alert-container');
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
             
-            // Mostrar loading
+            // Show loading state
             loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Iniciando sesión...';
             loginBtn.disabled = true;
             
@@ -141,29 +229,35 @@
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ email, password })
+                    body: JSON.stringify(validation.formData)
                 });
+                
+                if (!response.ok) {
+                    throw new Error(`Error ${response.status}: ${response.statusText}`);
+                }
                 
                 const data = await response.json();
                 
                 if (data.success) {
                     showAlert('success', data.message);
                     
-                    // Redirigir según el tipo de usuario
-                    if (data.user.tipo === 'admin') {
-                        window.location.href = '../admin/index.php';
-                    } else {
-                        window.location.href = '../../index.html';
-                    }
+                    // Redirect based on user type
+                    setTimeout(() => {
+                        if (data.user.tipo === 'admin') {
+                            window.location.href = '../admin/index.php';
+                        } else {
+                            window.location.href = '../../index.html';
+                        }
+                    }, 1000);
                 } else {
                     showAlert('danger', data.error || 'Error al iniciar sesión');
                 }
                 
             } catch (error) {
-                showAlert('danger', 'Error de conexión. Intenta nuevamente.');
                 console.error('Error:', error);
+                showAlert('danger', 'Error de conexión. Verifique su conexión a internet e intente nuevamente.');
             } finally {
-                // Restaurar botón
+                // Restore button
                 loginBtn.innerHTML = '<i class="fas fa-sign-in-alt me-2"></i>Iniciar Sesión';
                 loginBtn.disabled = false;
             }
@@ -191,7 +285,7 @@
             }, 5000);
         }
         
-        // Verificar si ya está logueado
+        // Check if already logged in
         window.addEventListener('load', async function() {
             try {
                 const response = await fetch('../api/auth.php?action=status');
