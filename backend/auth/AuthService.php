@@ -34,8 +34,7 @@ class AuthService {
             // Insertar nuevo usuario
             $query = "INSERT INTO usuarios (nombre, email, password, tipo_usuario, pais, provincia, canton) VALUES (?, ?, ?, ?, ?, ?, ?)";
             $stmt = $this->pdo->prepare($query);
-            $stmt->bind_param("sssssss", $nombre, $email, $passwordHash, $tipo_usuario, $pais, $provincia, $canton);
-            if ($stmt->execute()) {
+            if ($stmt->execute([$nombre, $email, $passwordHash, $tipo_usuario, $pais, $provincia, $canton])) {
                 return ['success' => true, 'message' => 'Usuario registrado correctamente'];
             } else {
                 return ['success' => false, 'message' => 'Error al registrar usuario'];
