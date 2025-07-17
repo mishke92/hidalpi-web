@@ -1,0 +1,54 @@
+{
+  "Ecuador": {
+    "Azuay": ["Cuenca", "Gualaceo", "Paute"],
+    "Bolívar": ["Guaranda", "Chillanes"],
+    "Cañar": ["Azogues", "La Troncal"],
+    "Carchi": ["Tulcán", "Mira"],
+    "Chimborazo": ["Riobamba", "Guano"],
+    "Cotopaxi": ["Latacunga", "Salcedo"],
+    "El Oro": ["Machala", "Santa Rosa"],
+    "Esmeraldas": ["Esmeraldas", "Atacames"],
+    "Galápagos": ["Puerto Ayora", "San Cristóbal"],
+    "Guayas": ["Guayaquil", "Daule", "Samborondón"],
+    "Imbabura": ["Ibarra", "Otavalo"],
+    "Loja": ["Loja", "Catamayo"],
+    "Los Ríos": ["Babahoyo", "Quevedo"],
+    "Manabí": ["Portoviejo", "Manta"],
+    "Morona Santiago": ["Macas", "Sucúa"],
+    "Napo": ["Tena", "Archidona"],
+    "Orellana": ["Francisco de Orellana"],
+    "Pastaza": ["Puyo"],
+    "Pichincha": ["Quito", "Cayambe", "Rumiñahui"],
+    "Santa Elena": ["Santa Elena", "La Libertad"],
+    "Santo Domingo": ["Santo Domingo"],
+    "Sucumbíos": ["Nueva Loja"],
+    "Tungurahua": ["Ambato", "Baños"],
+    "Zamora Chinchipe": ["Zamora"]
+  },
+  "Colombia": {
+    "Antioquia": ["Medellín", "Envigado", "Bello"],
+    "Cundinamarca": ["Bogotá", "Soacha"],
+    "Valle del Cauca": ["Cali", "Palmira"],
+    "Atlántico": ["Barranquilla"],
+    "Santander": ["Bucaramanga"]
+  },
+  "Perú": {
+    "Lima": ["Lima", "Miraflores"],
+    "Arequipa": ["Arequipa"],
+    "Cusco": ["Cusco"]
+  },
+  "Argentina": {
+    "Buenos Aires": ["La Plata", "Mar del Plata"],
+    "Córdoba": ["Córdoba"],
+    "Santa Fe": ["Rosario"]
+  },
+  "México": {
+    "Ciudad de México": ["Coyoacán", "Tlalpan"],
+    "Jalisco": ["Guadalajara"],
+    "Nuevo León": ["Monterrey"]
+  },
+  "Chile": {
+    "Región Metropolitana": ["Santiago", "Puente Alto"],
+    "Valparaíso": ["Valparaíso"]
+  }
+}

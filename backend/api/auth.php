@@ -68,7 +68,8 @@ switch ($method) {
  * Registrar nuevo usuario
  */
 function registrarUsuario($authService, $input) {
-    $requiredFields = ['nombre', 'email', 'password'];
+    error_log(json_encode($input)); // Esto escribe en el log de PHP
+    $requiredFields = ['nombre', 'email', 'password', 'pais', 'provincia', 'canton'];
     
     foreach ($requiredFields as $field) {
         if (!isset($input[$field]) || empty(trim($input[$field]))) {
@@ -82,7 +83,10 @@ function registrarUsuario($authService, $input) {
         trim($input['nombre']),
         trim($input['email']),
         $input['password'],
-        $input['tipo_usuario'] ?? 'cliente'
+        $input['tipo_usuario'] ?? 'cliente',
+        trim($input['pais']),
+        trim($input['provincia']),
+        trim($input['canton'])
     );
     
     if ($resultado['success']) {

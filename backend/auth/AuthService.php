@@ -18,7 +18,7 @@ class AuthService {
      * Registrar un nuevo usuario
      * Register a new user
      */
-    public function registrar($nombre, $email, $password, $tipo_usuario = 'cliente') {
+    public function registrar($nombre, $email, $password, $tipo_usuario, $pais, $provincia, $canton) {
         try {
             // Verificar si el email ya existe
             $stmt = $this->pdo->prepare("SELECT id FROM usuarios WHERE email = ?");
@@ -32,13 +32,14 @@ class AuthService {
             $passwordHash = password_hash($password, PASSWORD_DEFAULT);
             
             // Insertar nuevo usuario
-            $stmt = $this->pdo->prepare("
-                INSERT INTO usuarios (nombre, email, password, tipo_usuario) 
-                VALUES (?, ?, ?, ?)
-            ");
-            $stmt->execute([$nombre, $email, $passwordHash, $tipo_usuario]);
-            
-            return ['success' => true, 'message' => 'Usuario registrado exitosamente'];
+            $query = "INSERT INTO usuarios (nombre, email, password, tipo_usuario, pais, provincia, canton) VALUES (?, ?, ?, ?, ?, ?, ?)";
+            $stmt = $this->pdo->prepare($query);
+            $stmt->bind_param("sssssss", $nombre, $email, $passwordHash, $tipo_usuario, $pais, $provincia, $canton);
+            if ($stmt->execute()) {
+                return ['success' => true, 'message' => 'Usuario registrado correctamente'];
+            } else {
+                return ['success' => false, 'message' => 'Error al registrar usuario'];
+            }
             
         } catch (Exception $e) {
             return ['success' => false, 'message' => 'Error al registrar usuario: ' . $e->getMessage()];
