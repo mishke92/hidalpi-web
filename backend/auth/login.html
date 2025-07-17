@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar Sesión - HidalPi Web</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .login-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            max-width: 400px;
+            width: 100%;
+        }
+        .login-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+        .login-body {
+            padding: 2rem;
+        }
+        .form-control {
+            border-radius: 10px;
+            padding: 12px 15px;
+            margin-bottom: 1rem;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 12px;
+            font-weight: 600;
+            width: 100%;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+        }
+        .alert {
+            border-radius: 10px;
+            margin-bottom: 1rem;
+        }
+        .form-label {
+            font-weight: 600;
+            color: #333;
+        }
+        .text-decoration-none {
+            color: #667eea;
+        }
+        .text-decoration-none:hover {
+            color: #764ba2;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <h2 class="mb-0">
+                <i class="fas fa-balance-scale me-2"></i>
+                HidalPi Web
+            </h2>
+            <p class="mb-0 mt-2">Iniciar Sesión</p>
+        </div>
+        
+        <div class="login-body">
+            <div id="alert-container"></div>
+            
+            <form id="loginForm">
+                <div class="mb-3">
+                    <label for="email" class="form-label">
+                        <i class="fas fa-envelope me-2"></i>
+                        Correo Electrónico
+                    </label>
+                    <input type="email" class="form-control" id="email" name="email" required>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="password" class="form-label">
+                        <i class="fas fa-lock me-2"></i>
+                        Contraseña
+                    </label>
+                    <input type="password" class="form-control" id="password" name="password" required>
+                </div>
+                
+                <div class="mb-3 form-check">
+                    <input type="checkbox" class="form-check-input" id="remember">
+                    <label class="form-check-label" for="remember">
+                        Recordarme
+                    </label>
+                </div>
+                
+                <button type="submit" class="btn btn-primary" id="loginBtn">
+                    <i class="fas fa-sign-in-alt me-2"></i>
+                    Iniciar Sesión
+                </button>
+            </form>
+            
+            <div class="text-center mt-3">
+                <small>
+                    <a href="#" class="text-decoration-none">¿Olvidaste tu contraseña?</a>
+                </small>
+            </div>
+            
+            <div class="text-center mt-2">
+                <small>
+                    ¿No tienes cuenta? 
+                    <a href="register.html" class="text-decoration-none">Regístrate aquí</a>
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const loginBtn = document.getElementById('loginBtn');
+            const alertContainer = document.getElementById('alert-container');
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            // Mostrar loading
+            loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Iniciando sesión...';
+            loginBtn.disabled = true;
+            
+            try {
+                const response = await fetch('../api/auth.php?action=login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showAlert('success', data.message);
+                    
+                    // Redirigir según el tipo de usuario
+                    if (data.user.tipo === 'admin') {
+                        window.location.href = '../admin/index.php';
+                    } else {
+                        window.location.href = '../../index.html';
+                    }
+                } else {
+                    showAlert('danger', data.error || 'Error al iniciar sesión');
+                }
+                
+            } catch (error) {
+                showAlert('danger', 'Error de conexión. Intenta nuevamente.');
+                console.error('Error:', error);
+            } finally {
+                // Restaurar botón
+                loginBtn.innerHTML = '<i class="fas fa-sign-in-alt me-2"></i>Iniciar Sesión';
+                loginBtn.disabled = false;
+            }
+        });
+        
+        function showAlert(type, message) {
+            const alertContainer = document.getElementById('alert-container');
+            const alertHtml = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            alertContainer.innerHTML = alertHtml;
+            
+            // Auto-dismiss after 5 seconds
+            setTimeout(() => {
+                const alert = alertContainer.querySelector('.alert');
+                if (alert) {
+                    alert.classList.remove('show');
+                    setTimeout(() => {
+                        alert.remove();
+                    }, 150);
+                }
+            }, 5000);
+        }
+        
+        // Verificar si ya está logueado
+        window.addEventListener('load', async function() {
+            try {
+                const response = await fetch('../api/auth.php?action=status');
+                const data = await response.json();
+                
+                if (data.authenticated) {
+                    if (data.user.tipo === 'admin') {
+                        window.location.href = '../admin/index.php';
+                    } else {
+                        window.location.href = '../../index.html';
+                    }
+                }
+            } catch (error) {
+                console.error('Error checking auth status:', error);
+            }
+        });
+    </script>
+</body>
+</html>
