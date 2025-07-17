@@ -23,10 +23,10 @@ function Registration() {
     
     // Dirección
     street: '',
-    city: '',
-    state: '',
+    city: 'Machala',
+    state: 'El Oro',
     zipCode: '',
-    country: 'México',
+    country: 'Ecuador',
     
     // Preferencias
     notifications: true,
@@ -39,21 +39,21 @@ function Registration() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const companyTypes = [
+    'Compañía Anónima (C.A.)',
+    'Compañía de Responsabilidad Limitada (Cía. Ltda.)',
     'Sociedad Anónima (S.A.)',
-    'Sociedad de Responsabilidad Limitada (S.R.L.)',
-    'Sociedad Anónima de Capital Variable (S.A. de C.V.)',
-    'Persona Física con Actividad Empresarial',
-    'Asociación Civil (A.C.)',
+    'Persona Natural con Actividad Empresarial',
     'Fundación',
+    'Corporación',
+    'Asociación',
     'Otro'
   ];
 
   const states = [
-    'Aguascalientes', 'Baja California', 'Baja California Sur', 'Campeche', 'Chiapas',
-    'Chihuahua', 'Ciudad de México', 'Coahuila', 'Colima', 'Durango', 'Estado de México',
-    'Guanajuato', 'Guerrero', 'Hidalgo', 'Jalisco', 'Michoacán', 'Morelos', 'Nayarit',
-    'Nuevo León', 'Oaxaca', 'Puebla', 'Querétaro', 'Quintana Roo', 'San Luis Potosí',
-    'Sinaloa', 'Sonora', 'Tabasco', 'Tamaulipas', 'Tlaxcala', 'Veracruz', 'Yucatán', 'Zacatecas'
+    'Azuay', 'Bolívar', 'Cañar', 'Carchi', 'Chimborazo', 'Cotopaxi', 'El Oro', 'Esmeraldas', 
+    'Galápagos', 'Guayas', 'Imbabura', 'Loja', 'Los Ríos', 'Manabí', 'Morona Santiago', 
+    'Napo', 'Orellana', 'Pastaza', 'Pichincha', 'Santa Elena', 'Santo Domingo', 'Sucumbíos', 
+    'Tungurahua', 'Zamora Chinchipe'
   ];
 
   const handleInputChange = (e) => {
@@ -93,7 +93,7 @@ function Registration() {
     if (accountType === 'company') {
       if (!formData.companyName.trim()) newErrors.companyName = 'El nombre de la empresa es requerido';
       if (!formData.companyType) newErrors.companyType = 'El tipo de empresa es requerido';
-      if (!formData.taxId.trim()) newErrors.taxId = 'El RFC es requerido';
+      if (!formData.taxId.trim()) newErrors.taxId = 'El RUC es requerido';
     }
 
     // Validaciones de términos
@@ -111,12 +111,56 @@ function Registration() {
 
     setIsSubmitting(true);
     
-    // Simular envío del formulario
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      alert('¡Registro exitoso! Se ha enviado un correo de confirmación.');
-      // Aquí normalmente redirigiríamos al usuario o mostraríamos un mensaje de éxito
+      const userData = {
+        nombre: `${formData.firstName} ${formData.lastName}`,
+        email: formData.email,
+        password: formData.password,
+        pais: formData.country,
+        provincia: formData.state,
+        canton: formData.city
+      };
+
+      const response = await fetch('http://localhost:8000/backend/api/auth.php?action=register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData)
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        alert('¡Registro exitoso! Se ha creado su cuenta correctamente.');
+        // Reset form
+        setFormData({
+          firstName: '',
+          lastName: '',
+          email: '',
+          phone: '',
+          password: '',
+          confirmPassword: '',
+          companyName: '',
+          companyType: '',
+          taxId: '',
+          companyPhone: '',
+          companyEmail: '',
+          street: '',
+          city: '',
+          state: '',
+          zipCode: '',
+          country: 'Ecuador',
+          notifications: true,
+          newsletter: true,
+          terms: false,
+          privacy: false
+        });
+      } else {
+        alert('Error al registrar: ' + result.error);
+      }
     } catch (error) {
+      console.error('Error:', error);
       alert('Error al registrar. Por favor, intente nuevamente.');
     } finally {
       setIsSubmitting(false);
@@ -314,7 +358,7 @@ function Registration() {
                       
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          RFC *
+                          RUC *
                         </label>
                         <input
                           type="text"
@@ -363,7 +407,7 @@ function Registration() {
                     
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Estado
+                        Provincia
                       </label>
                       <select
                         name="state"
@@ -371,7 +415,7 @@ function Registration() {
                         onChange={handleInputChange}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                       >
-                        <option value="">Seleccionar estado</option>
+                        <option value="">Seleccionar provincia</option>
                         {states.map((state) => (
                           <option key={state} value={state}>{state}</option>
                         ))}

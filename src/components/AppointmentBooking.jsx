@@ -4,14 +4,14 @@ import { Calendar, Clock, User, CheckCircle, X } from 'lucide-react';
 function AppointmentBooking({ isOpen, onClose }) {
   const [step, setStep] = useState(1);
   const [appointmentData, setAppointmentData] = useState({
-    service: '',
-    lawyer: '',
-    date: '',
-    time: '',
-    name: '',
+    servicio: '',
+    abogado: '',
+    fecha: '',
+    hora: '',
+    nombre: '',
     email: '',
-    phone: '',
-    description: ''
+    telefono: '',
+    descripcion: ''
   });
 
   const services = [
@@ -49,9 +49,9 @@ function AppointmentBooking({ isOpen, onClose }) {
   };
 
   const getAvailableLawyers = () => {
-    if (!appointmentData.service) return lawyers;
+    if (!appointmentData.servicio) return lawyers;
     return lawyers.filter(lawyer => 
-      lawyer.specialties.includes(appointmentData.service) || 
+      lawyer.specialties.includes(appointmentData.servicio) || 
       lawyer.id === 'any'
     );
   };
@@ -70,9 +70,33 @@ function AppointmentBooking({ isOpen, onClose }) {
     if (step > 1) setStep(step - 1);
   };
 
-  const handleSubmit = () => {
-    // Aquí se enviaría la cita al backend
-    setStep(5); // Paso de confirmación
+  const handleSubmit = async () => {
+    // Validar campos requeridos
+    if (!appointmentData.nombre || !appointmentData.email || !appointmentData.telefono) {
+      alert('Por favor complete todos los campos obligatorios');
+      return;
+    }
+
+    try {
+      const response = await fetch('http://localhost:8000/backend/api/appointments.php?action=create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(appointmentData)
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        setStep(5); // Mostrar confirmación
+      } else {
+        alert('Error al crear la cita: ' + result.error);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error al procesar la solicitud. Por favor, intente nuevamente.');
+    }
   };
 
   if (!isOpen) return null;
@@ -118,9 +142,9 @@ function AppointmentBooking({ isOpen, onClose }) {
                 {services.map((service) => (
                   <button
                     key={service.id}
-                    onClick={() => setAppointmentData({...appointmentData, service: service.id})}
+                    onClick={() => setAppointmentData({...appointmentData, servicio: service.id})}
                     className={`p-4 border-2 rounded-lg text-left transition-colors ${
-                      appointmentData.service === service.id
+                      appointmentData.servicio === service.id
                         ? 'border-blue-600 bg-blue-50'
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
@@ -140,9 +164,9 @@ function AppointmentBooking({ isOpen, onClose }) {
                 {getAvailableLawyers().map((lawyer) => (
                   <button
                     key={lawyer.id}
-                    onClick={() => setAppointmentData({...appointmentData, lawyer: lawyer.id})}
+                    onClick={() => setAppointmentData({...appointmentData, abogado: lawyer.id})}
                     className={`w-full p-4 border-2 rounded-lg text-left transition-colors ${
-                      appointmentData.lawyer === lawyer.id
+                      appointmentData.abogado === lawyer.id
                         ? 'border-blue-600 bg-blue-50'
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
@@ -172,8 +196,8 @@ function AppointmentBooking({ isOpen, onClose }) {
                   </label>
                   <input
                     type="date"
-                    name="date"
-                    value={appointmentData.date}
+                    name="fecha"
+                    value={appointmentData.fecha}
                     onChange={handleInputChange}
                     min={getNextAvailableDate()}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
@@ -184,8 +208,8 @@ function AppointmentBooking({ isOpen, onClose }) {
                     Hora
                   </label>
                   <select
-                    name="time"
-                    value={appointmentData.time}
+                    name="hora"
+                    value={appointmentData.hora}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   >
@@ -197,10 +221,10 @@ function AppointmentBooking({ isOpen, onClose }) {
                 </div>
               </div>
               
-              {appointmentData.date && appointmentData.time && (
+              {appointmentData.fecha && appointmentData.hora && (
                 <div className="mt-4 p-4 bg-green-50 rounded-lg">
                   <p className="text-green-800 font-medium">
-                    Cita programada para: {new Date(appointmentData.date).toLocaleDateString('es-MX')} a las {appointmentData.time}
+                    Cita programada para: {new Date(appointmentData.fecha).toLocaleDateString('es-EC')} a las {appointmentData.hora}
                   </p>
                 </div>
               )}
@@ -213,9 +237,9 @@ function AppointmentBooking({ isOpen, onClose }) {
               <div className="space-y-4">
                 <input
                   type="text"
-                  name="name"
+                  name="nombre"
                   placeholder="Nombre completo"
-                  value={appointmentData.name}
+                  value={appointmentData.nombre}
                   onChange={handleInputChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
@@ -229,16 +253,16 @@ function AppointmentBooking({ isOpen, onClose }) {
                 />
                 <input
                   type="tel"
-                  name="phone"
+                  name="telefono"
                   placeholder="Teléfono"
-                  value={appointmentData.phone}
+                  value={appointmentData.telefono}
                   onChange={handleInputChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
                 <textarea
-                  name="description"
+                  name="descripcion"
                   placeholder="Breve descripción de su consulta (opcional)"
-                  value={appointmentData.description}
+                  value={appointmentData.descripcion}
                   onChange={handleInputChange}
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
@@ -256,11 +280,11 @@ function AppointmentBooking({ isOpen, onClose }) {
               </p>
               <div className="bg-gray-50 p-4 rounded-lg text-left">
                 <h4 className="font-semibold mb-2">Detalles de la Cita:</h4>
-                <p><strong>Servicio:</strong> {services.find(s => s.id === appointmentData.service)?.name}</p>
-                <p><strong>Abogado:</strong> {lawyers.find(l => l.id === appointmentData.lawyer)?.name}</p>
-                <p><strong>Fecha:</strong> {new Date(appointmentData.date).toLocaleDateString('es-MX')}</p>
-                <p><strong>Hora:</strong> {appointmentData.time}</p>
-                <p><strong>Cliente:</strong> {appointmentData.name}</p>
+                <p><strong>Servicio:</strong> {services.find(s => s.id === appointmentData.servicio)?.name}</p>
+                <p><strong>Abogado:</strong> {lawyers.find(l => l.id === appointmentData.abogado)?.name}</p>
+                <p><strong>Fecha:</strong> {new Date(appointmentData.fecha).toLocaleDateString('es-EC')}</p>
+                <p><strong>Hora:</strong> {appointmentData.hora}</p>
+                <p><strong>Cliente:</strong> {appointmentData.nombre}</p>
               </div>
             </div>
           )}
@@ -280,9 +304,9 @@ function AppointmentBooking({ isOpen, onClose }) {
               <button
                 onClick={handleNext}
                 disabled={
-                  (step === 1 && !appointmentData.service) ||
-                  (step === 2 && !appointmentData.lawyer) ||
-                  (step === 3 && (!appointmentData.date || !appointmentData.time))
+                  (step === 1 && !appointmentData.servicio) ||
+                  (step === 2 && !appointmentData.abogado) ||
+                  (step === 3 && (!appointmentData.fecha || !appointmentData.hora))
                 }
                 className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ml-auto"
               >
@@ -291,7 +315,7 @@ function AppointmentBooking({ isOpen, onClose }) {
             ) : step === 4 ? (
               <button
                 onClick={handleSubmit}
-                disabled={!appointmentData.name || !appointmentData.email || !appointmentData.phone}
+                disabled={!appointmentData.nombre || !appointmentData.email || !appointmentData.telefono}
                 className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ml-auto"
               >
                 Confirmar Cita

@@ -11,6 +11,9 @@ CREATE TABLE IF NOT EXISTS usuarios (
     email VARCHAR(100) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
     tipo_usuario ENUM('admin', 'cliente') DEFAULT 'cliente',
+    pais VARCHAR(100) DEFAULT 'Ecuador',
+    provincia VARCHAR(100),
+    canton VARCHAR(100),
     activo BOOLEAN DEFAULT TRUE,
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     fecha_actualizacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -20,13 +23,14 @@ CREATE TABLE IF NOT EXISTS usuarios (
 CREATE TABLE IF NOT EXISTS empresas (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(200) NOT NULL,
-    nit VARCHAR(50) UNIQUE,
+    ruc VARCHAR(50) UNIQUE,
     telefono VARCHAR(20),
     email VARCHAR(100),
     direccion TEXT,
     ciudad VARCHAR(100),
-    departamento VARCHAR(100),
-    pais VARCHAR(100) DEFAULT 'Colombia',
+    provincia VARCHAR(100),
+    canton VARCHAR(100),
+    pais VARCHAR(100) DEFAULT 'Ecuador',
     sitio_web VARCHAR(200),
     descripcion TEXT,
     servicios_principales TEXT,
@@ -61,7 +65,9 @@ CREATE TABLE IF NOT EXISTS clientes (
     email VARCHAR(100),
     direccion TEXT,
     ciudad VARCHAR(100),
-    departamento VARCHAR(100),
+    provincia VARCHAR(100),
+    canton VARCHAR(100),
+    pais VARCHAR(100) DEFAULT 'Ecuador',
     fecha_nacimiento DATE,
     genero ENUM('M', 'F', 'Otro'),
     activo BOOLEAN DEFAULT TRUE,
@@ -116,9 +122,9 @@ CREATE TABLE IF NOT EXISTS sesiones (
 INSERT INTO usuarios (nombre, email, password, tipo_usuario) VALUES
 ('Administrador', 'admin@hidalpi.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin');
 
-INSERT INTO empresas (nombre, nit, telefono, email, direccion, ciudad, departamento, descripcion, servicios_principales) VALUES
-('Bufete Hidalgo & Asociados', '900123456-7', '+57 1 234 5678', 'info@hidalgoasociados.com', 'Calle 123 #45-67', 'Bogotá', 'Cundinamarca', 'Firma de abogados especializada en derecho civil, comercial y laboral', 'Derecho Civil, Derecho Comercial, Derecho Laboral'),
-('Consultores Legales S.A.S.', '900234567-8', '+57 1 345 6789', 'contacto@consultoreslegales.com', 'Carrera 78 #90-12', 'Medellín', 'Antioquia', 'Consultoría legal integral para empresas y particulares', 'Derecho Empresarial, Derecho Fiscal, Derecho Inmobiliario');
+INSERT INTO empresas (nombre, ruc, telefono, email, direccion, ciudad, provincia, canton, descripcion, servicios_principales) VALUES
+('Bufete Hidalgo & Asociados', '0791234567001', '+593 7 293 4567', 'info@hidalgoasociados.com', 'Av. 25 de Junio y Colón', 'Machala', 'El Oro', 'Machala', 'Firma de abogados especializada en derecho civil, comercial y laboral', 'Derecho Civil, Derecho Comercial, Derecho Laboral'),
+('Consultores Legales Cía. Ltda.', '0791234568001', '+593 7 293 5678', 'contacto@consultoreslegales.com', 'Calle Bolívar y 9 de Mayo', 'Machala', 'El Oro', 'Machala', 'Consultoría legal integral para empresas y particulares', 'Derecho Empresarial, Derecho Fiscal, Derecho Inmobiliario');
 
 INSERT INTO servicios (nombre, descripcion, duracion_minutos, precio) VALUES
 ('Consulta General', 'Consulta legal general sobre diversos temas', 45, 150000),
@@ -131,15 +137,15 @@ INSERT INTO servicios (nombre, descripcion, duracion_minutos, precio) VALUES
 ('Derecho Inmobiliario', 'Asesoría en derecho inmobiliario y propiedad', 60, 240000);
 
 INSERT INTO abogados (nombre, apellido, cedula, telefono, email, especialidades, empresa_id) VALUES
-('Roberto', 'Hidalgo', '12345678', '+57 300 123 4567', 'r.hidalgo@hidalgoasociados.com', 'Derecho Civil, Derecho Comercial', 1),
-('Patricia', 'López', '23456789', '+57 301 234 5678', 'p.lopez@hidalgoasociados.com', 'Derecho Laboral', 1),
-('Miguel', 'Fernández', '34567890', '+57 302 345 6789', 'm.fernandez@consultoreslegales.com', 'Derecho Penal', 2),
-('Carmen', 'Ruiz', '45678901', '+57 303 456 7890', 'c.ruiz@consultoreslegales.com', 'Derecho de Familia', 2),
-('Andrés', 'Morales', '56789012', '+57 304 567 8901', 'a.morales@hidalgoasociados.com', 'Derecho Inmobiliario', 1),
-('Lucía', 'Vargas', '67890123', '+57 305 678 9012', 'l.vargas@consultoreslegales.com', 'Derecho Fiscal', 2);
+('Roberto', 'Hidalgo', '0701234567', '+593 99 123 4567', 'r.hidalgo@hidalgoasociados.com', 'Derecho Civil, Derecho Comercial', 1),
+('Patricia', 'López', '0702345678', '+593 99 234 5678', 'p.lopez@hidalgoasociados.com', 'Derecho Laboral', 1),
+('Miguel', 'Fernández', '0703456789', '+593 99 345 6789', 'm.fernandez@consultoreslegales.com', 'Derecho Penal', 2),
+('Carmen', 'Ruiz', '0704567890', '+593 99 456 7890', 'c.ruiz@consultoreslegales.com', 'Derecho de Familia', 2),
+('Andrés', 'Morales', '0705678901', '+593 99 567 8901', 'a.morales@hidalgoasociados.com', 'Derecho Inmobiliario', 1),
+('Lucía', 'Vargas', '0706789012', '+593 99 678 9012', 'l.vargas@consultoreslegales.com', 'Derecho Fiscal', 2);
 
-INSERT INTO clientes (nombre, apellido, cedula, telefono, email, direccion, ciudad, departamento, fecha_nacimiento, genero) VALUES
-('Juan', 'Pérez', '80123456', '+57 310 123 4567', 'juan.perez@email.com', 'Calle 50 #25-30', 'Bogotá', 'Cundinamarca', '1985-03-15', 'M'),
-('María', 'González', '80234567', '+57 311 234 5678', 'maria.gonzalez@email.com', 'Carrera 40 #60-80', 'Medellín', 'Antioquia', '1990-07-22', 'F'),
-('Carlos', 'Rodríguez', '80345678', '+57 312 345 6789', 'carlos.rodriguez@email.com', 'Avenida 15 #35-45', 'Cali', 'Valle del Cauca', '1982-11-10', 'M'),
-('Ana', 'Martínez', '80456789', '+57 313 456 7890', 'ana.martinez@email.com', 'Calle 80 #45-60', 'Barranquilla', 'Atlántico', '1988-05-18', 'F');
+INSERT INTO clientes (nombre, apellido, cedula, telefono, email, direccion, ciudad, provincia, canton, fecha_nacimiento, genero) VALUES
+('Juan', 'Pérez', '0701234568', '+593 99 123 4568', 'juan.perez@email.com', 'Av. Rocafuerte y Tarqui', 'Machala', 'El Oro', 'Machala', '1985-03-15', 'M'),
+('María', 'González', '0702345679', '+593 99 234 5679', 'maria.gonzalez@email.com', 'Calle Sucre y Colón', 'Machala', 'El Oro', 'Machala', '1990-07-22', 'F'),
+('Carlos', 'Rodríguez', '0703456780', '+593 99 345 6780', 'carlos.rodriguez@email.com', 'Av. 25 de Junio y Pichincha', 'Santa Rosa', 'El Oro', 'Santa Rosa', '1982-11-10', 'M'),
+('Ana', 'Martínez', '0704567891', '+593 99 456 7891', 'ana.martinez@email.com', 'Calle Juan Montalvo y Bolívar', 'Machala', 'El Oro', 'Machala', '1988-05-18', 'F');
