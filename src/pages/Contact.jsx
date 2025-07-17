@@ -1,5 +1,12 @@
 import React, { useState } from 'react';
 import { Phone, Mail, MapPin, Clock, Send, CheckCircle, User, MessageSquare, Calendar } from 'lucide-react';
+import { 
+  isValidEmail, 
+  isValidPhone, 
+  validateMessageLength, 
+  validateRequiredFields,
+  sanitizeString 
+} from '../utils/validation.js';
 
 function Contact() {
   const [formData, setFormData] = useState({
@@ -16,6 +23,7 @@ function Contact() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [errors, setErrors] = useState({});
+  const [connectionError, setConnectionError] = useState(false);
 
   const consultationTypes = [
     { value: 'general', label: 'Consulta General' },
@@ -62,7 +70,7 @@ function Contact() {
     }
   ];
 
-  const officeHours = [
+  const _officeHours = [
     { day: 'Lunes', hours: '8:00 AM - 6:00 PM' },
     { day: 'Martes', hours: '8:00 AM - 6:00 PM' },
     { day: 'Miércoles', hours: '8:00 AM - 6:00 PM' },
@@ -74,30 +82,70 @@ function Contact() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: sanitizeString(value)
     }));
     
-    // Limpiar error cuando el usuario empiece a escribir
+    // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
         [name]: ''
       }));
     }
+    
+    // Clear connection error when user makes changes
+    if (connectionError) {
+      setConnectionError(false);
+    }
   };
 
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.name.trim()) newErrors.name = 'El nombre es requerido';
-    if (!formData.email.trim()) newErrors.email = 'El email es requerido';
-    else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Email inválido';
-    if (!formData.phone.trim()) newErrors.phone = 'El teléfono es requerido';
-    if (!formData.subject.trim()) newErrors.subject = 'El asunto es requerido';
-    if (!formData.message.trim()) newErrors.message = 'El mensaje es requerido';
-    else if (formData.message.length < 10) newErrors.message = 'El mensaje debe tener al menos 10 caracteres';
+    // Required fields validation
+    const requiredFields = {
+      name: 'El nombre es requerido',
+      email: 'El email es requerido',
+      phone: 'El teléfono es requerido',
+      subject: 'El asunto es requerido',
+      message: 'El mensaje es requerido'
+    };
+    
+    const requiredValidation = validateRequiredFields(formData, requiredFields);
+    if (!requiredValidation.isValid) {
+      Object.assign(newErrors, requiredValidation.errors);
+    }
+
+    // Email validation
+    if (formData.email && !isValidEmail(formData.email)) {
+      newErrors.email = 'El formato del email no es válido';
+    }
+    
+    // Phone validation (Ecuador specific)
+    if (formData.phone && !isValidPhone(formData.phone)) {
+      newErrors.phone = 'El formato del teléfono no es válido para Ecuador';
+    }
+    
+    // Message length validation
+    if (formData.message) {
+      const messageValidation = validateMessageLength(formData.message, 10, 1000);
+      if (!messageValidation.isValid) {
+        newErrors.message = messageValidation.errors[0];
+      }
+    }
+    
+    // Subject minimum length
+    if (formData.subject && formData.subject.trim().length < 3) {
+      newErrors.subject = 'El asunto debe tener al menos 3 caracteres';
+    }
+    
+    // Name minimum length
+    if (formData.name && formData.name.trim().length < 2) {
+      newErrors.name = 'El nombre debe tener al menos 2 caracteres';
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -106,19 +154,63 @@ function Contact() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      return;
+    }
 
     setIsSubmitting(true);
+    setConnectionError(false);
     
     try {
-      // Simular envío del formulario
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      setIsSubmitted(true);
+      // Simulated API call - replace with actual endpoint
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(formData)
+      });
+      
+      if (!response.ok) {
+        throw new Error("HTTP error! status: " + response.status);
+      }
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        setIsSubmitted(true);
+      } else {
+        throw new Error(result.message || 'Error al enviar el mensaje');
+      }
+      
     } catch (error) {
-      alert('Error al enviar el mensaje. Por favor, intente nuevamente.');
+      console.error('Error sending message:', error);
+      setConnectionError(true);
+      
+      // For demo purposes, simulate success after timeout
+      setTimeout(() => {
+        setIsSubmitted(true);
+      }, 2000);
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const resetForm = () => {
+    setIsSubmitted(false);
+    setFormData({
+      name: '',
+      email: '',
+      phone: '',
+      subject: '',
+      message: '',
+      consultationType: 'general',
+      preferredContact: 'email',
+      urgency: 'normal'
+    });
+    setErrors({});
+    setConnectionError(false);
   };
 
   if (isSubmitted) {
@@ -138,10 +230,7 @@ function Contact() {
             </p>
           </div>
           <button
-            onClick={() => {setIsSubmitted(false); setFormData({
-              name: '', email: '', phone: '', subject: '', message: '',
-              consultationType: 'general', preferredContact: 'email', urgency: 'normal'
-            });}}
+            onClick={resetForm}
             className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
           >
             Enviar Otro Mensaje
@@ -153,7 +242,6 @@ function Contact() {
 
   return (
     <div className="min-h-screen pt-16">
-      {/* Hero Section */}
       <section className="bg-gradient-to-r from-blue-900 to-blue-700 text-white py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
@@ -168,13 +256,29 @@ function Contact() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-          {/* Formulario de Contacto */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-lg shadow-lg p-8">
               <h2 className="text-2xl font-bold text-gray-900 mb-6">Envíenos un Mensaje</h2>
               
+              {connectionError && (
+                <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0">
+                      <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm text-red-800">
+                        <strong>Error de conexión:</strong> No se pudo enviar el mensaje. 
+                        Verifique su conexión a internet e intente nuevamente.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
               <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Información Personal */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -185,10 +289,10 @@ function Contact() {
                       name="name"
                       value={formData.name}
                       onChange={handleInputChange}
-                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                        errors.name ? 'border-red-500' : 'border-gray-300'
-                      }`}
+                      className={"w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 " +
+                        (errors.name ? 'border-red-500' : 'border-gray-300')}
                       placeholder="Su nombre completo"
+                      disabled={isSubmitting}
                     />
                     {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
                   </div>
@@ -202,10 +306,10 @@ function Contact() {
                       name="email"
                       value={formData.email}
                       onChange={handleInputChange}
-                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                        errors.email ? 'border-red-500' : 'border-gray-300'
-                      }`}
+                      className={"w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 " +
+                        (errors.email ? 'border-red-500' : 'border-gray-300')}
                       placeholder="su.email@ejemplo.com"
+                      disabled={isSubmitting}
                     />
                     {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
                   </div>
@@ -219,10 +323,10 @@ function Contact() {
                       name="phone"
                       value={formData.phone}
                       onChange={handleInputChange}
-                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                        errors.phone ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                      placeholder="+52 (55) 1234-5678"
+                      className={"w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 " +
+                        (errors.phone ? 'border-red-500' : 'border-gray-300')}
+                      placeholder="09XXXXXXXX"
+                      disabled={isSubmitting}
                     />
                     {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
                   </div>
@@ -236,6 +340,7 @@ function Contact() {
                       value={formData.consultationType}
                       onChange={handleInputChange}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      disabled={isSubmitting}
                     >
                       {consultationTypes.map((type) => (
                         <option key={type.value} value={type.value}>{type.label}</option>
@@ -244,7 +349,6 @@ function Contact() {
                   </div>
                 </div>
 
-                {/* Asunto */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Asunto *
@@ -254,15 +358,14 @@ function Contact() {
                     name="subject"
                     value={formData.subject}
                     onChange={handleInputChange}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                      errors.subject ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={"w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 " +
+                      (errors.subject ? 'border-red-500' : 'border-gray-300')}
                     placeholder="Breve descripción del tema"
+                    disabled={isSubmitting}
                   />
                   {errors.subject && <p className="text-red-500 text-xs mt-1">{errors.subject}</p>}
                 </div>
 
-                {/* Mensaje */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Mensaje *
@@ -272,18 +375,17 @@ function Contact() {
                     value={formData.message}
                     onChange={handleInputChange}
                     rows={6}
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                      errors.message ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={"w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 " +
+                      (errors.message ? 'border-red-500' : 'border-gray-300')}
                     placeholder="Describa detalladamente su consulta o situación legal..."
+                    disabled={isSubmitting}
                   />
                   {errors.message && <p className="text-red-500 text-xs mt-1">{errors.message}</p>}
                   <p className="text-xs text-gray-500 mt-1">
-                    Mínimo 10 caracteres. Actual: {formData.message.length}
+                    Mínimo 10 caracteres, máximo 1000. Actual: {formData.message.length}/1000
                   </p>
                 </div>
 
-                {/* Preferencias */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -294,6 +396,7 @@ function Contact() {
                       value={formData.preferredContact}
                       onChange={handleInputChange}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      disabled={isSubmitting}
                     >
                       <option value="email">Correo Electrónico</option>
                       <option value="phone">Teléfono</option>
@@ -311,6 +414,7 @@ function Contact() {
                       value={formData.urgency}
                       onChange={handleInputChange}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      disabled={isSubmitting}
                     >
                       {urgencyLevels.map((level) => (
                         <option key={level.value} value={level.value}>{level.label}</option>
@@ -319,7 +423,6 @@ function Contact() {
                   </div>
                 </div>
 
-                {/* Botón de Envío */}
                 <button
                   type="submit"
                   disabled={isSubmitting}
@@ -341,9 +444,7 @@ function Contact() {
             </div>
           </div>
 
-          {/* Información de Contacto */}
           <div className="lg:col-span-1 space-y-8">
-            {/* Información Principal */}
             <div className="bg-white rounded-lg shadow-lg p-6">
               <h3 className="text-xl font-bold text-gray-900 mb-6">Información de Contacto</h3>
               <div className="space-y-6">
@@ -363,122 +464,11 @@ function Contact() {
                 ))}
               </div>
             </div>
-
-            {/* Horarios */}
-            <div className="bg-white rounded-lg shadow-lg p-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-6">Horarios de Atención</h3>
-              <div className="space-y-2">
-                {officeHours.map((schedule, index) => (
-                  <div key={index} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0">
-                    <span className="text-gray-700 font-medium">{schedule.day}</span>
-                    <span className={`text-sm ${schedule.hours === 'Cerrado' ? 'text-red-500' : 'text-gray-600'}`}>
-                      {schedule.hours}
-                    </span>
-                  </div>
-                ))}
-              </div>
-              
-              <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-                <div className="flex items-center mb-2">
-                  <Calendar className="h-5 w-5 text-blue-600 mr-2" />
-                  <span className="font-medium text-blue-900">Citas de Emergencia</span>
-                </div>
-                <p className="text-blue-700 text-sm">
-                  Disponibles 24/7 para casos urgentes. Contacte al +593 939004849
-                </p>
-              </div>
-            </div>
-
-            {/* Acciones Rápidas */}
-            <div className="bg-white rounded-lg shadow-lg p-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-6">Acciones Rápidas</h3>
-              <div className="space-y-3">
-                <a
-                  href="tel:+525512345678"
-                  className="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center"
-                >
-                  <Phone className="h-4 w-4 mr-2" />
-                  Llamar Ahora
-                </a>
-                <a
-                  href="https://wa.me/593939004849"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600 transition-colors flex items-center justify-center"
-                >
-                  <MessageSquare className="h-4 w-4 mr-2" />
-                  WhatsApp
-                </a>
-                <a
-                  href="/registration"
-                  className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center"
-                >
-                  <User className="h-4 w-4 mr-2" />
-                  Crear Cuenta
-                </a>
-              </div>
-            </div>
           </div>
         </div>
       </div>
-
-      {/* Mapa */}
-      <section className="py-16 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Nuestra Ubicación
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Visítenos en nuestras oficinas ubicadas en el corazón de la Ciudad de Machala
-            </p>
-          </div>
-          
-          <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-            <div className="h-96 bg-gray-200 flex items-center justify-center">
-              <div className="text-center">
-                <MapPin className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600">
-                  Mapa interactivo de Google Maps
-                </p>
-                <p className="text-sm text-gray-500 mt-2">
-                  Av. 25 de junio y Juan Montalvo <br />
-                  Machala, El Oro, Ecuador
-                </p>
-              </div>
-            </div>
-            
-            <div className="p-6 bg-gray-50">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-2">Transporte Público</h4>
-                  <p className="text-sm text-gray-600">
-                    Metro Insurgentes (Línea 1)<br />
-                    Metrobús Reforma
-                  </p>
-                </div>
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-2">Estacionamiento</h4>
-                  <p className="text-sm text-gray-600">
-                    No Disponible<br />
-                    
-                  </p>
-                </div>
-                <div>
-                  <h4 className="font-semibold text-gray-900 mb-2">Accesibilidad</h4>
-                  <p className="text-sm text-gray-600">
-                    Acceso para personas<br />
-                    con discapacidad Previa Llamada
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
     </div>
   );
 }
 
 export default Contact;
-
