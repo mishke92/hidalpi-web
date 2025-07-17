@@ -53,7 +53,7 @@ function RegisterForm() {
         } else {
           setErrors(prev => ({ ...prev, email: '' }));
         }
-      } catch (error) {
+      } catch {
         // Ignore network errors for email check
       }
     }
@@ -90,12 +90,13 @@ function RegisterForm() {
     let error = '';
     
     switch (fieldName) {
-      case 'nombre':
+      case 'nombre': {
         const nameValidation = validateName(value);
         if (!nameValidation.isValid) {
           error = nameValidation.message;
         }
         break;
+      }
         
       case 'email':
         if (!value) {
@@ -130,7 +131,7 @@ function RegisterForm() {
         }
         break;
         
-      case 'confirmPassword':
+      case 'confirmPassword': {
         if (!value) {
           error = 'Confirme su contraseña';
         } else {
@@ -140,6 +141,7 @@ function RegisterForm() {
           }
         }
         break;
+      }
         
       case 'pais':
         if (!value) {
@@ -259,6 +261,57 @@ function RegisterForm() {
       setIsSubmitting(false);
     }
   };
+
+  // Password strength calculation
+  const calculatePasswordStrength = (password) => {
+    let strength = 0;
+    const checks = [];
+    
+    if (password.length >= 8) {
+      strength += 1;
+      checks.push('Longitud mínima');
+    }
+    
+    if (/[A-Z]/.test(password)) {
+      strength += 1;
+      checks.push('Mayúscula');
+    }
+    
+    if (/[a-z]/.test(password)) {
+      strength += 1;
+      checks.push('Minúscula');
+    }
+    
+    if (/\d/.test(password)) {
+      strength += 1;
+      checks.push('Número');
+    }
+    
+    if (/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+      strength += 1;
+      checks.push('Carácter especial');
+    }
+    
+    return { strength, checks };
+  };
+
+  const getPasswordStrengthColor = (strength) => {
+    if (strength <= 1) return 'bg-red-500';
+    if (strength <= 2) return 'bg-orange-500';
+    if (strength <= 3) return 'bg-yellow-500';
+    if (strength <= 4) return 'bg-blue-500';
+    return 'bg-green-500';
+  };
+
+  const getPasswordStrengthText = (strength) => {
+    if (strength <= 1) return 'Muy débil';
+    if (strength <= 2) return 'Débil';
+    if (strength <= 3) return 'Media';
+    if (strength <= 4) return 'Fuerte';
+    return 'Muy fuerte';
+  };
+
+  const passwordStrength = calculatePasswordStrength(formData.password);
 
   // Update location dropdowns when country changes
   useEffect(() => {
@@ -519,6 +572,26 @@ function RegisterForm() {
             </div>
             {touchedFields.password && errors.password && (
               <p className="text-red-500 text-xs mt-1">{errors.password}</p>
+            )}
+            
+            {/* Password Strength Indicator */}
+            {formData.password && (
+              <div className="mt-2">
+                <div className="flex items-center space-x-2 mb-1">
+                  <div className="flex-1 bg-gray-200 rounded-full h-2">
+                    <div 
+                      className={`h-2 rounded-full transition-all duration-300 ${getPasswordStrengthColor(passwordStrength.strength)}`}
+                      style={{ width: `${(passwordStrength.strength / 5) * 100}%` }}
+                    ></div>
+                  </div>
+                  <span className="text-xs text-gray-600">
+                    {getPasswordStrengthText(passwordStrength.strength)}
+                  </span>
+                </div>
+                <div className="text-xs text-gray-500">
+                  Requisitos: {passwordStrength.checks.join(', ')}
+                </div>
+              </div>
             )}
           </div>
 

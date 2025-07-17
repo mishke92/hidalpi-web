@@ -108,12 +108,13 @@ function Contact() {
     let error = '';
     
     switch (fieldName) {
-      case 'name':
+      case 'name': {
         const nameValidation = validateName(value);
         if (!nameValidation.isValid) {
           error = nameValidation.message;
         }
         break;
+      }
         
       case 'email':
         if (!value.trim()) {
@@ -131,19 +132,21 @@ function Contact() {
         }
         break;
         
-      case 'subject':
+      case 'subject': {
         const subjectValidation = validateSubject(value);
         if (!subjectValidation.isValid) {
           error = subjectValidation.message;
         }
         break;
+      }
         
-      case 'message':
+      case 'message': {
         const messageValidation = validateMessage(value, 10);
         if (!messageValidation.isValid) {
           error = messageValidation.message;
         }
         break;
+      }
     }
     
     setErrors(prev => ({ ...prev, [fieldName]: error }));
@@ -194,10 +197,27 @@ function Contact() {
         urgency: formData.urgency
       };
 
-      // Simulate API call for now - replace with actual endpoint later
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      setIsSubmitted(true);
-      setErrors({});
+      // Call the actual API endpoint
+      const response = await fetch('http://localhost:8000/backend/api/contact.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(submitData)
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      
+      if (result.success) {
+        setIsSubmitted(true);
+        setErrors({});
+      } else {
+        setErrors({ submit: result.error || 'Error al enviar el mensaje' });
+      }
     } catch (error) {
       console.error('Contact form error:', error);
       setErrors({ submit: getNetworkErrorMessage(error) });
