@@ -70,9 +70,41 @@ function crearCita($input) {
     foreach ($requiredFields as $field) {
         if (!isset($input[$field]) || empty(trim($input[$field]))) {
             http_response_code(400);
-            echo json_encode(['error' => "El campo '$field' es requerido"]);
+            echo json_encode(['error' => "El campo '$field' es requerido", 'success' => false]);
             return;
         }
+    }
+    
+    // Validaciones adicionales
+    if (!filter_var($input['email'], FILTER_VALIDATE_EMAIL)) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Formato de email inválido', 'success' => false]);
+        return;
+    }
+    
+    if (!validarTelefonoEcuador($input['telefono'])) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Formato de teléfono inválido', 'success' => false]);
+        return;
+    }
+    
+    // Validar fecha
+    $fechaCita = DateTime::createFromFormat('Y-m-d', $input['fecha']);
+    $hoy = new DateTime();
+    $hoy->setTime(0, 0, 0);
+    
+    if (!$fechaCita || $fechaCita < $hoy) {
+        http_response_code(400);
+        echo json_encode(['error' => 'La fecha debe ser válida y no puede ser anterior a hoy', 'success' => false]);
+        return;
+    }
+    
+    // Validar hora
+    $horasValidas = ['09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '12:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00'];
+    if (!in_array($input['hora'], $horasValidas)) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Hora no válida', 'success' => false]);
+        return;
     }
     
     try {
@@ -101,7 +133,7 @@ function crearCita($input) {
         
         if (!$servicio) {
             http_response_code(400);
-            echo json_encode(['error' => 'Servicio no encontrado']);
+            echo json_encode(['error' => 'Servicio no encontrado', 'success' => false]);
             return;
         }
         
@@ -111,7 +143,7 @@ function crearCita($input) {
         
         if (!$abogado) {
             http_response_code(400);
-            echo json_encode(['error' => 'Abogado no encontrado']);
+            echo json_encode(['error' => 'Abogado no encontrado', 'success' => false]);
             return;
         }
         
@@ -121,7 +153,7 @@ function crearCita($input) {
         
         if ($stmt->fetch()) {
             http_response_code(400);
-            echo json_encode(['error' => 'El horario ya está ocupado']);
+            echo json_encode(['error' => 'El horario ya está ocupado para este abogado', 'success' => false]);
             return;
         }
         
@@ -149,12 +181,12 @@ function crearCita($input) {
             ]);
         } else {
             http_response_code(400);
-            echo json_encode(['error' => 'Error al crear la cita']);
+            echo json_encode(['error' => 'Error al crear la cita', 'success' => false]);
         }
         
     } catch (Exception $e) {
         http_response_code(500);
-        echo json_encode(['error' => 'Error al crear cita: ' . $e->getMessage()]);
+        echo json_encode(['error' => 'Error al crear cita: ' . $e->getMessage(), 'success' => false]);
     }
 }
 
@@ -234,5 +266,21 @@ function obtenerCita($id) {
         http_response_code(500);
         echo json_encode(['error' => 'Error al obtener cita: ' . $e->getMessage()]);
     }
+}
+
+/**
+ * Validar teléfono de Ecuador
+ */
+function validarTelefonoEcuador($telefono) {
+    $telefono = preg_replace('/\D/', '', $telefono);
+    
+    if (substr($telefono, 0, 3) === '593') {
+        return strlen($telefono) === 12 && preg_match('/^593[2-9]\d{8}$/', $telefono);
+    } elseif (substr($telefono, 0, 1) === '0') {
+        return (strlen($telefono) === 10 && preg_match('/^09\d{8}$/', $telefono)) ||
+               (strlen($telefono) === 8 && preg_match('/^0[2-7]\d{6}$/', $telefono));
+    }
+    
+    return false;
 }
 ?>

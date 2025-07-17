@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Calendar, Clock, User, CheckCircle, X } from 'lucide-react';
+import { isValidEmail, isValidPhone, sanitizeString } from '../utils/validation';
+import { useNotification } from './ui/notification';
 
 function AppointmentBooking({ isOpen, onClose }) {
   const [step, setStep] = useState(1);
@@ -13,6 +15,9 @@ function AppointmentBooking({ isOpen, onClose }) {
     telefono: '',
     descripcion: ''
   });
+  const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { showSuccess, showError } = useNotification();
 
   const services = [
     { id: 'civil', name: 'Derecho Civil', duration: '60 min' },
@@ -42,10 +47,19 @@ function AppointmentBooking({ isOpen, onClose }) {
   ];
 
   const handleInputChange = (e) => {
+    const { name, value } = e.target;
     setAppointmentData({
       ...appointmentData,
-      [e.target.name]: e.target.value
+      [name]: value
     });
+    
+    // Limpiar error cuando el usuario empiece a escribir
+    if (errors[name]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
   };
 
   const getAvailableLawyers = () => {
@@ -56,6 +70,62 @@ function AppointmentBooking({ isOpen, onClose }) {
     );
   };
 
+  const validateStep = (stepNumber) => {
+    const newErrors = {};
+    
+    switch (stepNumber) {
+      case 1:
+        if (!appointmentData.servicio) {
+          newErrors.servicio = 'Debe seleccionar un servicio';
+        }
+        break;
+      case 2:
+        if (!appointmentData.abogado) {
+          newErrors.abogado = 'Debe seleccionar un abogado';
+        }
+        break;
+      case 3:
+        if (!appointmentData.fecha) {
+          newErrors.fecha = 'Debe seleccionar una fecha';
+        } else {
+          const selectedDate = new Date(appointmentData.fecha);
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          
+          if (selectedDate < today) {
+            newErrors.fecha = 'La fecha no puede ser anterior a hoy';
+          }
+        }
+        
+        if (!appointmentData.hora) {
+          newErrors.hora = 'Debe seleccionar una hora';
+        }
+        break;
+      case 4:
+        if (!appointmentData.nombre.trim()) {
+          newErrors.nombre = 'El nombre es requerido';
+        } else if (appointmentData.nombre.trim().length < 2) {
+          newErrors.nombre = 'El nombre debe tener al menos 2 caracteres';
+        }
+        
+        if (!appointmentData.email.trim()) {
+          newErrors.email = 'El email es requerido';
+        } else if (!isValidEmail(appointmentData.email)) {
+          newErrors.email = 'Formato de email inválido';
+        }
+        
+        if (!appointmentData.telefono.trim()) {
+          newErrors.telefono = 'El teléfono es requerido';
+        } else if (!isValidPhone(appointmentData.telefono)) {
+          newErrors.telefono = 'Formato de teléfono inválido. Use formato ecuatoriano (ej: 0987654321)';
+        }
+        break;
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const getNextAvailableDate = () => {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -63,7 +133,9 @@ function AppointmentBooking({ isOpen, onClose }) {
   };
 
   const handleNext = () => {
-    if (step < 4) setStep(step + 1);
+    if (validateStep(step)) {
+      setStep(step + 1);
+    }
   };
 
   const handlePrev = () => {
@@ -71,32 +143,62 @@ function AppointmentBooking({ isOpen, onClose }) {
   };
 
   const handleSubmit = async () => {
-    // Validar campos requeridos
-    if (!appointmentData.nombre || !appointmentData.email || !appointmentData.telefono) {
-      alert('Por favor complete todos los campos obligatorios');
-      return;
-    }
+    if (!validateStep(4)) return;
 
+    setIsSubmitting(true);
+    
     try {
+      const appointmentPayload = {
+        servicio: sanitizeString(appointmentData.servicio),
+        abogado: sanitizeString(appointmentData.abogado),
+        fecha: sanitizeString(appointmentData.fecha),
+        hora: sanitizeString(appointmentData.hora),
+        nombre: sanitizeString(appointmentData.nombre),
+        email: sanitizeString(appointmentData.email),
+        telefono: sanitizeString(appointmentData.telefono),
+        descripcion: sanitizeString(appointmentData.descripcion)
+      };
+
       const response = await fetch('http://localhost:8000/backend/api/appointments.php?action=create', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(appointmentData)
+        body: JSON.stringify(appointmentPayload)
       });
 
       const result = await response.json();
       
       if (result.success) {
         setStep(5); // Mostrar confirmación
+        showSuccess('¡Cita agendada exitosamente! Recibirá un email con los detalles.');
       } else {
-        alert('Error al crear la cita: ' + result.error);
+        showError(result.error || 'Error al crear la cita');
       }
     } catch (error) {
       console.error('Error:', error);
-      alert('Error al procesar la solicitud. Por favor, intente nuevamente.');
+      showError('Error de conexión. Por favor, intente nuevamente.');
+    } finally {
+      setIsSubmitting(false);
     }
+  };
+
+  const handleClose = () => {
+    // Reset form state
+    setStep(1);
+    setAppointmentData({
+      servicio: '',
+      abogado: '',
+      fecha: '',
+      hora: '',
+      nombre: '',
+      email: '',
+      telefono: '',
+      descripcion: ''
+    });
+    setErrors({});
+    setIsSubmitting(false);
+    onClose();
   };
 
   if (!isOpen) return null;
@@ -109,7 +211,7 @@ function AppointmentBooking({ isOpen, onClose }) {
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-gray-900">Agendar Cita</h2>
             <button
-              onClick={onClose}
+              onClick={handleClose}
               className="text-gray-400 hover:text-gray-600"
             >
               <X className="h-6 w-6" />
@@ -147,13 +249,14 @@ function AppointmentBooking({ isOpen, onClose }) {
                       appointmentData.servicio === service.id
                         ? 'border-blue-600 bg-blue-50'
                         : 'border-gray-200 hover:border-gray-300'
-                    }`}
+                    } ${errors.servicio ? 'border-red-500' : ''}`}
                   >
                     <h4 className="font-semibold text-gray-900">{service.name}</h4>
                     <p className="text-sm text-gray-600">Duración: {service.duration}</p>
                   </button>
                 ))}
               </div>
+              {errors.servicio && <p className="text-red-500 text-sm mt-2">{errors.servicio}</p>}
             </div>
           )}
 
@@ -169,7 +272,7 @@ function AppointmentBooking({ isOpen, onClose }) {
                       appointmentData.abogado === lawyer.id
                         ? 'border-blue-600 bg-blue-50'
                         : 'border-gray-200 hover:border-gray-300'
-                    }`}
+                    } ${errors.abogado ? 'border-red-500' : ''}`}
                   >
                     <div className="flex items-center space-x-3">
                       <User className="h-8 w-8 text-blue-600" />
@@ -183,6 +286,7 @@ function AppointmentBooking({ isOpen, onClose }) {
                   </button>
                 ))}
               </div>
+              {errors.abogado && <p className="text-red-500 text-sm mt-2">{errors.abogado}</p>}
             </div>
           )}
 
@@ -200,8 +304,11 @@ function AppointmentBooking({ isOpen, onClose }) {
                     value={appointmentData.fecha}
                     onChange={handleInputChange}
                     min={getNextAvailableDate()}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
+                      errors.fecha ? 'border-red-500' : 'border-gray-300'
+                    }`}
                   />
+                  {errors.fecha && <p className="text-red-500 text-sm mt-1">{errors.fecha}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -211,13 +318,16 @@ function AppointmentBooking({ isOpen, onClose }) {
                     name="hora"
                     value={appointmentData.hora}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
+                      errors.hora ? 'border-red-500' : 'border-gray-300'
+                    }`}
                   >
                     <option value="">Seleccionar hora</option>
                     {timeSlots.map((time) => (
                       <option key={time} value={time}>{time}</option>
                     ))}
                   </select>
+                  {errors.hora && <p className="text-red-500 text-sm mt-1">{errors.hora}</p>}
                 </div>
               </div>
               
@@ -235,30 +345,45 @@ function AppointmentBooking({ isOpen, onClose }) {
             <div>
               <h3 className="text-lg font-semibold mb-4">Información de Contacto</h3>
               <div className="space-y-4">
-                <input
-                  type="text"
-                  name="nombre"
-                  placeholder="Nombre completo"
-                  value={appointmentData.nombre}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-                <input
-                  type="email"
-                  name="email"
-                  placeholder="Correo electrónico"
-                  value={appointmentData.email}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-                <input
-                  type="tel"
-                  name="telefono"
-                  placeholder="Teléfono"
-                  value={appointmentData.telefono}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
+                <div>
+                  <input
+                    type="text"
+                    name="nombre"
+                    placeholder="Nombre completo"
+                    value={appointmentData.nombre}
+                    onChange={handleInputChange}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
+                      errors.nombre ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  />
+                  {errors.nombre && <p className="text-red-500 text-sm mt-1">{errors.nombre}</p>}
+                </div>
+                <div>
+                  <input
+                    type="email"
+                    name="email"
+                    placeholder="Correo electrónico"
+                    value={appointmentData.email}
+                    onChange={handleInputChange}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
+                      errors.email ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  />
+                  {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
+                </div>
+                <div>
+                  <input
+                    type="tel"
+                    name="telefono"
+                    placeholder="Teléfono (ej: 0987654321)"
+                    value={appointmentData.telefono}
+                    onChange={handleInputChange}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
+                      errors.telefono ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  />
+                  {errors.telefono && <p className="text-red-500 text-sm mt-1">{errors.telefono}</p>}
+                </div>
                 <textarea
                   name="descripcion"
                   placeholder="Breve descripción de su consulta (opcional)"
@@ -303,26 +428,21 @@ function AppointmentBooking({ isOpen, onClose }) {
             {step < 4 ? (
               <button
                 onClick={handleNext}
-                disabled={
-                  (step === 1 && !appointmentData.servicio) ||
-                  (step === 2 && !appointmentData.abogado) ||
-                  (step === 3 && (!appointmentData.fecha || !appointmentData.hora))
-                }
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ml-auto"
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors ml-auto"
               >
                 Siguiente
               </button>
             ) : step === 4 ? (
               <button
                 onClick={handleSubmit}
-                disabled={!appointmentData.nombre || !appointmentData.email || !appointmentData.telefono}
+                disabled={isSubmitting}
                 className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ml-auto"
               >
-                Confirmar Cita
+                {isSubmitting ? 'Procesando...' : 'Confirmar Cita'}
               </button>
             ) : (
               <button
-                onClick={onClose}
+                onClick={handleClose}
                 className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors mx-auto"
               >
                 Cerrar

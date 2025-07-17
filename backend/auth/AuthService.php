@@ -18,7 +18,7 @@ class AuthService {
      * Registrar un nuevo usuario
      * Register a new user
      */
-    public function registrar($nombre, $email, $password, $tipo_usuario, $pais, $provincia, $canton) {
+    public function registrar($nombre, $email, $password, $tipo_usuario, $pais, $provincia, $canton, $telefono = '', $cedula = '', $direccion = '', $codigo_postal = '', $empresa_id = null, $notificaciones = true, $newsletter = false) {
         try {
             // Verificar si el email ya existe
             $stmt = $this->pdo->prepare("SELECT id FROM usuarios WHERE email = ?");
@@ -28,13 +28,24 @@ class AuthService {
                 return ['success' => false, 'message' => 'El email ya está registrado'];
             }
             
+            // Verificar si la cédula ya existe (si se proporciona)
+            if (!empty($cedula)) {
+                $stmt = $this->pdo->prepare("SELECT id FROM usuarios WHERE cedula = ?");
+                $stmt->execute([$cedula]);
+                
+                if ($stmt->fetch()) {
+                    return ['success' => false, 'message' => 'La cédula ya está registrada'];
+                }
+            }
+            
             // Encriptar contraseña
             $passwordHash = password_hash($password, PASSWORD_DEFAULT);
             
             // Insertar nuevo usuario
-            $query = "INSERT INTO usuarios (nombre, email, password, tipo_usuario, pais, provincia, canton) VALUES (?, ?, ?, ?, ?, ?, ?)";
+            $query = "INSERT INTO usuarios (nombre, email, password, tipo_usuario, pais, provincia, canton, telefono, cedula, direccion, codigo_postal, empresa_id, notificaciones, newsletter) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             $stmt = $this->pdo->prepare($query);
-            if ($stmt->execute([$nombre, $email, $passwordHash, $tipo_usuario, $pais, $provincia, $canton])) {
+            
+            if ($stmt->execute([$nombre, $email, $passwordHash, $tipo_usuario, $pais, $provincia, $canton, $telefono, $cedula, $direccion, $codigo_postal, $empresa_id, $notificaciones, $newsletter])) {
                 return ['success' => true, 'message' => 'Usuario registrado correctamente'];
             } else {
                 return ['success' => false, 'message' => 'Error al registrar usuario'];
