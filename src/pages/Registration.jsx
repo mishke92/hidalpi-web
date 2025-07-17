@@ -23,8 +23,8 @@ function Registration() {
     
     // Dirección
     street: '',
-    city: '',
-    state: '',
+    city: 'Machala',
+    state: 'El Oro',
     zipCode: '',
     country: 'Ecuador',
     

@@ -2,11 +2,11 @@ import countriesLatam from '../data/countriesLatam.json';
 import { useState } from 'react';
 
 function RegisterForm() {
-  const [selectedCountry, setSelectedCountry] = useState('');
-  const [selectedProvince, setSelectedProvince] = useState('');
-  const [selectedCanton, setSelectedCanton] = useState('');
-  const [provinces, setProvinces] = useState([]);
-  const [cantons, setCantons] = useState([]);
+  const [selectedCountry, setSelectedCountry] = useState('Ecuador');
+  const [selectedProvince, setSelectedProvince] = useState('El Oro');
+  const [selectedCanton, setSelectedCanton] = useState('Machala');
+  const [provinces, setProvinces] = useState(Object.keys(countriesLatam['Ecuador'] || {}));
+  const [cantons, setCantons] = useState(countriesLatam['Ecuador']['El Oro'] || []);
 
   const handleCountryChange = (e) => {
     const country = e.target.value;
