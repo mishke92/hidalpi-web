@@ -1,5 +1,14 @@
 import React, { useState } from 'react';
-import { Phone, Mail, MapPin, Clock, Send, CheckCircle, User, MessageSquare, Calendar } from 'lucide-react';
+import { Phone, Mail, MapPin, Clock, Send, CheckCircle, User, MessageSquare, Calendar, AlertCircle } from 'lucide-react';
+import { 
+  isValidEmail, 
+  isValidPhone, 
+  validateName, 
+  validateSubject, 
+  validateMessage, 
+  sanitizeString,
+  getNetworkErrorMessage
+} from '../utils/validation';
 
 function Contact() {
   const [formData, setFormData] = useState({
@@ -16,6 +25,7 @@ function Contact() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [errors, setErrors] = useState({});
+  const [touchedFields, setTouchedFields] = useState({});
 
   const consultationTypes = [
     { value: 'general', label: 'Consulta General' },
@@ -79,7 +89,7 @@ function Contact() {
       [name]: value
     }));
     
-    // Limpiar error cuando el usuario empiece a escribir
+    // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
@@ -88,37 +98,148 @@ function Contact() {
     }
   };
 
+  const handleBlur = (e) => {
+    const { name, value } = e.target;
+    setTouchedFields(prev => ({ ...prev, [name]: true }));
+    validateField(name, value);
+  };
+
+  const validateField = (fieldName, value) => {
+    let error = '';
+    
+    switch (fieldName) {
+      case 'name': {
+        const nameValidation = validateName(value);
+        if (!nameValidation.isValid) {
+          error = nameValidation.message;
+        }
+        break;
+      }
+        
+      case 'email':
+        if (!value.trim()) {
+          error = 'El email es requerido';
+        } else if (!isValidEmail(value)) {
+          error = 'Formato de email inválido';
+        }
+        break;
+        
+      case 'phone':
+        if (!value.trim()) {
+          error = 'El teléfono es requerido';
+        } else if (!isValidPhone(value)) {
+          error = 'Formato de teléfono inválido para Ecuador';
+        }
+        break;
+        
+      case 'subject': {
+        const subjectValidation = validateSubject(value);
+        if (!subjectValidation.isValid) {
+          error = subjectValidation.message;
+        }
+        break;
+      }
+        
+      case 'message': {
+        const messageValidation = validateMessage(value, 10);
+        if (!messageValidation.isValid) {
+          error = messageValidation.message;
+        }
+        break;
+      }
+    }
+    
+    setErrors(prev => ({ ...prev, [fieldName]: error }));
+    return !error;
+  };
+
   const validateForm = () => {
-    const newErrors = {};
-
-    if (!formData.name.trim()) newErrors.name = 'El nombre es requerido';
-    if (!formData.email.trim()) newErrors.email = 'El email es requerido';
-    else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Email inválido';
-    if (!formData.phone.trim()) newErrors.phone = 'El teléfono es requerido';
-    if (!formData.subject.trim()) newErrors.subject = 'El asunto es requerido';
-    if (!formData.message.trim()) newErrors.message = 'El mensaje es requerido';
-    else if (formData.message.length < 10) newErrors.message = 'El mensaje debe tener al menos 10 caracteres';
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    const requiredFields = ['name', 'email', 'phone', 'subject', 'message'];
+    let isValid = true;
+    
+    requiredFields.forEach(field => {
+      if (!validateField(field, formData[field])) {
+        isValid = false;
+      }
+    });
+    
+    return isValid;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!validateForm()) return;
+    // Mark all fields as touched
+    const allFields = ['name', 'email', 'phone', 'subject', 'message'];
+    setTouchedFields(prev => {
+      const newTouched = { ...prev };
+      allFields.forEach(field => {
+        newTouched[field] = true;
+      });
+      return newTouched;
+    });
+    
+    if (!validateForm()) {
+      return;
+    }
 
     setIsSubmitting(true);
     
     try {
-      // Simular envío del formulario
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      setIsSubmitted(true);
+      const submitData = {
+        name: sanitizeString(formData.name),
+        email: sanitizeString(formData.email),
+        phone: sanitizeString(formData.phone),
+        subject: sanitizeString(formData.subject),
+        message: sanitizeString(formData.message),
+        consultationType: formData.consultationType,
+        preferredContact: formData.preferredContact,
+        urgency: formData.urgency
+      };
+
+      // Call the actual API endpoint
+      const response = await fetch('http://localhost:8000/backend/api/contact.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(submitData)
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      
+      if (result.success) {
+        setIsSubmitted(true);
+        setErrors({});
+      } else {
+        setErrors({ submit: result.error || 'Error al enviar el mensaje' });
+      }
     } catch (error) {
-      alert('Error al enviar el mensaje. Por favor, intente nuevamente.');
+      console.error('Contact form error:', error);
+      setErrors({ submit: getNetworkErrorMessage(error) });
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const resetForm = () => {
+    setIsSubmitted(false);
+    setFormData({
+      name: '', 
+      email: '', 
+      phone: '', 
+      subject: '', 
+      message: '',
+      consultationType: 'general', 
+      preferredContact: 'email', 
+      urgency: 'normal'
+    });
+    setErrors({});
+    setTouchedFields({});
   };
 
   if (isSubmitted) {
@@ -138,10 +259,7 @@ function Contact() {
             </p>
           </div>
           <button
-            onClick={() => {setIsSubmitted(false); setFormData({
-              name: '', email: '', phone: '', subject: '', message: '',
-              consultationType: 'general', preferredContact: 'email', urgency: 'normal'
-            });}}
+            onClick={resetForm}
             className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
           >
             Enviar Otro Mensaje
@@ -173,6 +291,16 @@ function Contact() {
             <div className="bg-white rounded-lg shadow-lg p-8">
               <h2 className="text-2xl font-bold text-gray-900 mb-6">Envíenos un Mensaje</h2>
               
+              {/* Submit Error */}
+              {errors.submit && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                  <div className="flex items-center">
+                    <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
+                    <span className="text-red-700">{errors.submit}</span>
+                  </div>
+                </div>
+              )}
+              
               <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Información Personal */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -185,12 +313,15 @@ function Contact() {
                       name="name"
                       value={formData.name}
                       onChange={handleInputChange}
+                      onBlur={handleBlur}
                       className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                        errors.name ? 'border-red-500' : 'border-gray-300'
+                        touchedFields.name && errors.name ? 'border-red-500' : 'border-gray-300'
                       }`}
                       placeholder="Su nombre completo"
                     />
-                    {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
+                    {touchedFields.name && errors.name && (
+                      <p className="text-red-500 text-xs mt-1">{errors.name}</p>
+                    )}
                   </div>
                   
                   <div>
@@ -202,12 +333,15 @@ function Contact() {
                       name="email"
                       value={formData.email}
                       onChange={handleInputChange}
+                      onBlur={handleBlur}
                       className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                        errors.email ? 'border-red-500' : 'border-gray-300'
+                        touchedFields.email && errors.email ? 'border-red-500' : 'border-gray-300'
                       }`}
                       placeholder="su.email@ejemplo.com"
                     />
-                    {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
+                    {touchedFields.email && errors.email && (
+                      <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+                    )}
                   </div>
                   
                   <div>
@@ -219,12 +353,15 @@ function Contact() {
                       name="phone"
                       value={formData.phone}
                       onChange={handleInputChange}
+                      onBlur={handleBlur}
                       className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                        errors.phone ? 'border-red-500' : 'border-gray-300'
+                        touchedFields.phone && errors.phone ? 'border-red-500' : 'border-gray-300'
                       }`}
-                      placeholder="+52 (55) 1234-5678"
+                      placeholder="0987654321"
                     />
-                    {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
+                    {touchedFields.phone && errors.phone && (
+                      <p className="text-red-500 text-xs mt-1">{errors.phone}</p>
+                    )}
                   </div>
                   
                   <div>
@@ -254,12 +391,15 @@ function Contact() {
                     name="subject"
                     value={formData.subject}
                     onChange={handleInputChange}
+                    onBlur={handleBlur}
                     className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                      errors.subject ? 'border-red-500' : 'border-gray-300'
+                      touchedFields.subject && errors.subject ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder="Breve descripción del tema"
                   />
-                  {errors.subject && <p className="text-red-500 text-xs mt-1">{errors.subject}</p>}
+                  {touchedFields.subject && errors.subject && (
+                    <p className="text-red-500 text-xs mt-1">{errors.subject}</p>
+                  )}
                 </div>
 
                 {/* Mensaje */}
@@ -271,13 +411,16 @@ function Contact() {
                     name="message"
                     value={formData.message}
                     onChange={handleInputChange}
+                    onBlur={handleBlur}
                     rows={6}
                     className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 ${
-                      errors.message ? 'border-red-500' : 'border-gray-300'
+                      touchedFields.message && errors.message ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder="Describa detalladamente su consulta o situación legal..."
                   />
-                  {errors.message && <p className="text-red-500 text-xs mt-1">{errors.message}</p>}
+                  {touchedFields.message && errors.message && (
+                    <p className="text-red-500 text-xs mt-1">{errors.message}</p>
+                  )}
                   <p className="text-xs text-gray-500 mt-1">
                     Mínimo 10 caracteres. Actual: {formData.message.length}
                   </p>
@@ -394,7 +537,7 @@ function Contact() {
               <h3 className="text-xl font-bold text-gray-900 mb-6">Acciones Rápidas</h3>
               <div className="space-y-3">
                 <a
-                  href="tel:+525512345678"
+                  href="tel:+593939004849"
                   className="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center"
                 >
                   <Phone className="h-4 w-4 mr-2" />
@@ -453,22 +596,22 @@ function Contact() {
                 <div>
                   <h4 className="font-semibold text-gray-900 mb-2">Transporte Público</h4>
                   <p className="text-sm text-gray-600">
-                    Metro Insurgentes (Línea 1)<br />
-                    Metrobús Reforma
+                    Líneas de bus principales<br />
+                    Parada cercana disponible
                   </p>
                 </div>
                 <div>
                   <h4 className="font-semibold text-gray-900 mb-2">Estacionamiento</h4>
                   <p className="text-sm text-gray-600">
-                    No Disponible<br />
-                    
+                    Estacionamiento gratuito<br />
+                    Disponible en la calle
                   </p>
                 </div>
                 <div>
                   <h4 className="font-semibold text-gray-900 mb-2">Accesibilidad</h4>
                   <p className="text-sm text-gray-600">
                     Acceso para personas<br />
-                    con discapacidad Previa Llamada
+                    con discapacidad
                   </p>
                 </div>
               </div>
@@ -481,4 +624,3 @@ function Contact() {
 }
 
 export default Contact;
-

@@ -221,3 +221,228 @@ export const formatRUC = (ruc) => {
   
   return ruc;
 };
+
+/**
+ * Validates form field length
+ * @param {string} value - Value to validate
+ * @param {number} min - Minimum length
+ * @param {number} max - Maximum length
+ * @returns {object} - Validation result
+ */
+export const validateLength = (value, min, max) => {
+  const length = value ? value.trim().length : 0;
+  
+  if (length < min) {
+    return {
+      isValid: false,
+      message: `El campo debe tener al menos ${min} caracteres`
+    };
+  }
+  
+  if (max && length > max) {
+    return {
+      isValid: false,
+      message: `El campo no puede tener más de ${max} caracteres`
+    };
+  }
+  
+  return { isValid: true };
+};
+
+/**
+ * Validates name field
+ * @param {string} name - Name to validate
+ * @returns {object} - Validation result
+ */
+export const validateName = (name) => {
+  if (!name || !name.trim()) {
+    return {
+      isValid: false,
+      message: 'El nombre es requerido'
+    };
+  }
+  
+  const cleanName = name.trim();
+  
+  if (cleanName.length < 2) {
+    return {
+      isValid: false,
+      message: 'El nombre debe tener al menos 2 caracteres'
+    };
+  }
+  
+  if (cleanName.length > 50) {
+    return {
+      isValid: false,
+      message: 'El nombre no puede tener más de 50 caracteres'
+    };
+  }
+  
+  // Check for invalid characters
+  if (!/^[a-zA-ZÀ-ÿ\s]+$/.test(cleanName)) {
+    return {
+      isValid: false,
+      message: 'El nombre solo puede contener letras y espacios'
+    };
+  }
+  
+  return { isValid: true };
+};
+
+/**
+ * Validates subject field
+ * @param {string} subject - Subject to validate
+ * @returns {object} - Validation result
+ */
+export const validateSubject = (subject) => {
+  if (!subject || !subject.trim()) {
+    return {
+      isValid: false,
+      message: 'El asunto es requerido'
+    };
+  }
+  
+  const cleanSubject = subject.trim();
+  
+  if (cleanSubject.length < 3) {
+    return {
+      isValid: false,
+      message: 'El asunto debe tener al menos 3 caracteres'
+    };
+  }
+  
+  if (cleanSubject.length > 100) {
+    return {
+      isValid: false,
+      message: 'El asunto no puede tener más de 100 caracteres'
+    };
+  }
+  
+  return { isValid: true };
+};
+
+/**
+ * Validates message field
+ * @param {string} message - Message to validate
+ * @param {number} minLength - Minimum length (default: 10)
+ * @returns {object} - Validation result
+ */
+export const validateMessage = (message, minLength = 10) => {
+  if (!message || !message.trim()) {
+    return {
+      isValid: false,
+      message: 'El mensaje es requerido'
+    };
+  }
+  
+  const cleanMessage = message.trim();
+  
+  if (cleanMessage.length < minLength) {
+    return {
+      isValid: false,
+      message: `El mensaje debe tener al menos ${minLength} caracteres`
+    };
+  }
+  
+  if (cleanMessage.length > 2000) {
+    return {
+      isValid: false,
+      message: 'El mensaje no puede tener más de 2000 caracteres'
+    };
+  }
+  
+  return { isValid: true };
+};
+
+/**
+ * Validates if passwords match
+ * @param {string} password - Original password
+ * @param {string} confirmPassword - Confirmation password
+ * @returns {object} - Validation result
+ */
+export const validatePasswordMatch = (password, confirmPassword) => {
+  if (password !== confirmPassword) {
+    return {
+      isValid: false,
+      message: 'Las contraseñas no coinciden'
+    };
+  }
+  
+  return { isValid: true };
+};
+
+/**
+ * Validates multiple fields at once
+ * @param {object} data - Data object to validate
+ * @param {object} validationRules - Validation rules object
+ * @returns {object} - Validation result with errors object
+ */
+export const validateMultipleFields = (data, validationRules) => {
+  const errors = {};
+  
+  for (const [field, rules] of Object.entries(validationRules)) {
+    const value = data[field];
+    
+    for (const rule of rules) {
+      const result = rule(value);
+      if (!result.isValid) {
+        errors[field] = result.message;
+        break; // Stop at first error for this field
+      }
+    }
+  }
+  
+  return {
+    isValid: Object.keys(errors).length === 0,
+    errors
+  };
+};
+
+/**
+ * Debounce function for validation
+ * @param {function} func - Function to debounce
+ * @param {number} wait - Wait time in ms
+ * @returns {function} - Debounced function
+ */
+export const debounce = (func, wait) => {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+};
+
+/**
+ * Generate user-friendly error messages for network errors
+ * @param {Error} error - The error object
+ * @returns {string} - User-friendly error message
+ */
+export const getNetworkErrorMessage = (error) => {
+  if (!error) return 'Error desconocido';
+  
+  // Network errors
+  if (error.name === 'TypeError' && error.message.includes('fetch')) {
+    return 'Error de conexión. Verifique su conexión a internet e intente nuevamente.';
+  }
+  
+  // Timeout errors
+  if (error.name === 'AbortError' || error.message.includes('timeout')) {
+    return 'La conexión ha tardado demasiado. Intente nuevamente.';
+  }
+  
+  // Server errors
+  if (error.status >= 500) {
+    return 'Error del servidor. Intente más tarde.';
+  }
+  
+  // Client errors
+  if (error.status >= 400) {
+    return 'Error en la solicitud. Verifique los datos e intente nuevamente.';
+  }
+  
+  return 'Error de conexión. Intente más tarde.';
+};

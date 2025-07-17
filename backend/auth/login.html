@@ -123,6 +123,101 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Función para validar email
+        function isValidEmail(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
+        }
+        
+        // Función para mostrar errores
+        function showFieldError(fieldName, message) {
+            const field = document.getElementById(fieldName);
+            field.classList.add('is-invalid');
+            field.classList.remove('is-valid');
+            
+            // Limpiar error anterior
+            const existingError = field.parentNode.querySelector('.invalid-feedback');
+            if (existingError) {
+                existingError.remove();
+            }
+            
+            // Agregar nuevo error
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'invalid-feedback';
+            errorDiv.textContent = message;
+            field.parentNode.appendChild(errorDiv);
+        }
+        
+        // Función para limpiar errores
+        function clearFieldError(fieldName) {
+            const field = document.getElementById(fieldName);
+            field.classList.remove('is-invalid');
+            field.classList.add('is-valid');
+            
+            const existingError = field.parentNode.querySelector('.invalid-feedback');
+            if (existingError) {
+                existingError.remove();
+            }
+        }
+        
+        // Función para validar campo individual
+        function validateField(fieldName, value) {
+            switch (fieldName) {
+                case 'email':
+                    if (!value.trim()) {
+                        showFieldError(fieldName, 'El email es requerido');
+                        return false;
+                    } else if (!isValidEmail(value)) {
+                        showFieldError(fieldName, 'Formato de email inválido');
+                        return false;
+                    } else {
+                        clearFieldError(fieldName);
+                        return true;
+                    }
+                    
+                case 'password':
+                    if (!value.trim()) {
+                        showFieldError(fieldName, 'La contraseña es requerida');
+                        return false;
+                    } else if (value.length < 8) {
+                        showFieldError(fieldName, 'La contraseña debe tener al menos 8 caracteres');
+                        return false;
+                    } else {
+                        clearFieldError(fieldName);
+                        return true;
+                    }
+                    
+                default:
+                    return true;
+            }
+        }
+        
+        // Validación en tiempo real
+        document.getElementById('email').addEventListener('blur', function() {
+            validateField('email', this.value);
+        });
+        
+        document.getElementById('password').addEventListener('blur', function() {
+            validateField('password', this.value);
+        });
+        
+        // Limpiar errores al empezar a escribir
+        document.getElementById('email').addEventListener('input', function() {
+            if (this.classList.contains('is-invalid')) {
+                this.classList.remove('is-invalid');
+                const error = this.parentNode.querySelector('.invalid-feedback');
+                if (error) error.remove();
+            }
+        });
+        
+        document.getElementById('password').addEventListener('input', function() {
+            if (this.classList.contains('is-invalid')) {
+                this.classList.remove('is-invalid');
+                const error = this.parentNode.querySelector('.invalid-feedback');
+                if (error) error.remove();
+            }
+        });
+        
         document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
@@ -130,6 +225,15 @@
             const alertContainer = document.getElementById('alert-container');
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
+            
+            // Validar campos
+            let isValid = true;
+            isValid = validateField('email', email) && isValid;
+            isValid = validateField('password', password) && isValid;
+            
+            if (!isValid) {
+                return;
+            }
             
             // Mostrar loading
             loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Iniciando sesión...';
@@ -160,7 +264,11 @@
                 }
                 
             } catch (error) {
-                showAlert('danger', 'Error de conexión. Intenta nuevamente.');
+                let errorMessage = 'Error de conexión. Intente nuevamente.';
+                if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                    errorMessage = 'Error de conexión. Verifique su conexión a internet e intente nuevamente.';
+                }
+                showAlert('danger', errorMessage);
                 console.error('Error:', error);
             } finally {
                 // Restaurar botón
