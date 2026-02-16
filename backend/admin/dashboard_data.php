@@ -4,10 +4,14 @@
  * API to get admin dashboard data
  */
 
+require_once __DIR__ . '/../config/security.php';
+
+// Initialize security
+Security::enforceHTTPS();
+Security::addSecurityHeaders();
+Security::setupCORS();
+
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET');
-header('Access-Control-Allow-Headers: Content-Type');
 
 require_once '../auth/AuthService.php';
 require_once '../config/database.php';
@@ -17,6 +21,14 @@ $authService->requiereAdministrador();
 
 $pdo = getConnection();
 $type = $_GET['type'] ?? 'dashboard';
+
+// Validate type parameter
+$validTypes = ['dashboard', 'empresas', 'clientes', 'citas', 'abogados'];
+if (!in_array($type, $validTypes)) {
+    http_response_code(400);
+    echo json_encode(['error' => 'Tipo de datos inválido']);
+    exit;
+}
 
 switch ($type) {
     case 'dashboard':

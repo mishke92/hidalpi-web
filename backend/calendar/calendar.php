@@ -4,8 +4,9 @@
  * Calendar integration service - .ics file generation
  */
 
-require_once '../auth/AuthService.php';
-require_once '../config/database.php';
+require_once __DIR__ . '/../auth/AuthService.php';
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/security.php';
 
 class CalendarService {
     private $pdo;
@@ -333,10 +334,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     
     switch ($action) {
         case 'cita':
-            $citaId = $_GET['cita_id'] ?? '';
-            if (empty($citaId)) {
+            $citaId = Security::validateInt($_GET['cita_id'] ?? '', 1);
+            if ($citaId === false) {
                 http_response_code(400);
-                echo json_encode(['error' => 'ID de cita requerido']);
+                echo json_encode(['error' => 'ID de cita inválido']);
                 exit;
             }
             
@@ -353,10 +354,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             break;
             
         case 'cliente':
-            $clienteId = $_GET['cliente_id'] ?? '';
-            if (empty($clienteId)) {
+            $clienteId = Security::validateInt($_GET['cliente_id'] ?? '', 1);
+            if ($clienteId === false) {
                 http_response_code(400);
-                echo json_encode(['error' => 'ID de cliente requerido']);
+                echo json_encode(['error' => 'ID de cliente inválido']);
                 exit;
             }
             
@@ -373,10 +374,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             break;
             
         case 'abogado':
-            $abogadoId = $_GET['abogado_id'] ?? '';
-            if (empty($abogadoId)) {
+            $abogadoId = Security::validateInt($_GET['abogado_id'] ?? '', 1);
+            if ($abogadoId === false) {
                 http_response_code(400);
-                echo json_encode(['error' => 'ID de abogado requerido']);
+                echo json_encode(['error' => 'ID de abogado inválido']);
                 exit;
             }
             
