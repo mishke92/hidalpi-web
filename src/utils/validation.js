@@ -181,8 +181,14 @@ export const sanitizeString = (input) => {
   
   return input
     .trim()
-    .replace(/[<>]/g, '') // Remove potential HTML tags
-    .replace(/\s+/g, ' '); // Replace multiple spaces with single space
+    // Remove HTML tags
+    .replace(/<[^>]*>/g, '')
+    // Remove javascript: protocol
+    .replace(/javascript:/gi, '')
+    // Remove event handlers
+    .replace(/on\w+\s*=/gi, '')
+    // Replace multiple spaces with single space
+    .replace(/\s+/g, ' ');
 };
 
 /**

@@ -4,10 +4,14 @@
  * Authentication API - Registration, login and logout endpoints
  */
 
+require_once __DIR__ . '/../config/security.php';
+
+// Initialize security
+Security::enforceHTTPS();
+Security::addSecurityHeaders();
+Security::setupCORS();
+
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
 
 // Manejar preflight CORS
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -92,9 +96,9 @@ function registrarUsuario($authService, $input) {
     }
     
     // Sanitizar entrada
-    $nombre = sanitizeInput($input['nombre']);
-    $email = sanitizeInput($input['email']);
-    $tipo_usuario = sanitizeInput($input['tipo_usuario']);
+    $nombre = Security::sanitizeInput($input['nombre']);
+    $email = Security::sanitizeInput($input['email']);
+    $tipo_usuario = Security::sanitizeInput($input['tipo_usuario']);
     
     // Validar nombre
     if (strlen($nombre) < 2 || strlen($nombre) > 100) {
@@ -145,9 +149,9 @@ function registrarUsuario($authService, $input) {
     }
     
     // Validar ubicación si se proporciona
-    $pais = isset($input['pais']) ? sanitizeInput($input['pais']) : '';
-    $provincia = isset($input['provincia']) ? sanitizeInput($input['provincia']) : '';
-    $canton = isset($input['canton']) ? sanitizeInput($input['canton']) : '';
+    $pais = isset($input['pais']) ? Security::sanitizeInput($input['pais']) : '';
+    $provincia = isset($input['provincia']) ? Security::sanitizeInput($input['provincia']) : '';
+    $canton = isset($input['canton']) ? Security::sanitizeInput($input['canton']) : '';
     
     if (!empty($pais) && !validarUbicacion($pais, $provincia, $canton)) {
         http_response_code(400);
@@ -191,6 +195,9 @@ function registrarUsuario($authService, $input) {
  * Iniciar sesión
  */
 function iniciarSesion($authService, $input) {
+    // Rate limiting for login attempts
+    Security::checkRateLimit('login', 5, 300);
+    
     $requiredFields = ['email', 'password'];
     
     foreach ($requiredFields as $field) {
@@ -202,7 +209,7 @@ function iniciarSesion($authService, $input) {
     }
     
     // Sanitizar entrada
-    $email = sanitizeInput($input['email']);
+    $email = Security::sanitizeInput($input['email']);
     
     // Validar email
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
