@@ -45,7 +45,10 @@ export const apiRequest = async (endpoint, options = {}) => {
     
     return await response.json();
   } catch (error) {
-    console.error('API request failed:', error);
+    // Only log in development
+    if (import.meta.env.DEV) {
+      console.error('API request failed:', error);
+    }
     throw error;
   }
 };

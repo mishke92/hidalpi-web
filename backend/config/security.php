@@ -98,7 +98,8 @@ class Security {
         header('X-Frame-Options: DENY');
         header('X-XSS-Protection: 1; mode=block');
         header('Referrer-Policy: strict-origin-when-cross-origin');
-        header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline';");
+        // Note: Adjust CSP based on your needs. Remove 'unsafe-inline' and 'unsafe-eval' in production
+        header("Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;");
     }
     
     /**
@@ -139,6 +140,7 @@ class Security {
     
     /**
      * Rate limiting check (simple implementation)
+     * Note: Consider more robust solutions like Redis for production
      */
     public static function checkRateLimit($key, $maxAttempts = 5, $timeWindow = 300) {
         if (!isset($_SESSION['rate_limit'])) {
@@ -146,7 +148,16 @@ class Security {
         }
         
         $now = time();
-        $limitKey = $key . '_' . ($_SERVER['REMOTE_ADDR'] ?? 'unknown');
+        $remoteAddr = $_SERVER['REMOTE_ADDR'] ?? null;
+        
+        // Reject requests without IP address
+        if ($remoteAddr === null) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Invalid request']);
+            exit;
+        }
+        
+        $limitKey = $key . '_' . $remoteAddr;
         
         if (!isset($_SESSION['rate_limit'][$limitKey])) {
             $_SESSION['rate_limit'][$limitKey] = ['count' => 0, 'start' => $now];

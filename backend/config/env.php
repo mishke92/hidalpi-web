@@ -21,7 +21,8 @@ class Env {
         }
         
         if (!file_exists($path)) {
-            throw new Exception("Environment file not found: $path");
+            error_log("Environment configuration file not found: $path");
+            throw new Exception("Environment configuration file not found. Please check server logs.");
         }
         
         $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
@@ -56,7 +57,7 @@ class Env {
             self::load();
         }
         
-        return self::$vars[$key] ?? getenv($key) ?: $default;
+        return self::$vars[$key] ?? getenv($key) ?: ($default ?? null);
     }
     
     /**
