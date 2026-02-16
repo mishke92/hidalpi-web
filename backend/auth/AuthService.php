@@ -4,8 +4,11 @@
  * User authentication system
  */
 
-session_start();
-require_once '../config/database.php';
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/security.php';
+
+// Initialize secure session
+Security::initSecureSession();
 
 class AuthService {
     private $pdo;

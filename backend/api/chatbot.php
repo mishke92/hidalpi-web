@@ -4,10 +4,14 @@
  * Chatbot API - Company and schedule information
  */
 
+require_once __DIR__ . '/../config/security.php';
+
+// Initialize security
+Security::enforceHTTPS();
+Security::addSecurityHeaders();
+Security::setupCORS();
+
 header('Content-Type: application/json; charset=utf-8');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, Authorization');
 
 // Manejar preflight CORS
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {

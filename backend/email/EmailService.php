@@ -4,16 +4,28 @@
  * Email notifications service
  */
 
+require_once __DIR__ . '/../config/env.php';
+
 // Instalación de PHPMailer con Composer (comando para instalar):
 // composer require phpmailer/phpmailer
 
 class EmailService {
-    private $host = 'smtp.gmail.com';
-    private $port = 587;
-    private $username = 'tu_email@gmail.com'; // Configurar email
-    private $password = 'tu_password'; // Configurar contraseña o App Password
-    private $fromEmail = 'noreply@hidalpi.com';
-    private $fromName = 'HidalPi Web';
+    private $host;
+    private $port;
+    private $username;
+    private $password;
+    private $fromEmail;
+    private $fromName;
+    
+    public function __construct() {
+        // Load email configuration from environment
+        $this->host = Env::get('SMTP_HOST', 'smtp.gmail.com');
+        $this->port = Env::get('SMTP_PORT', 587);
+        $this->username = Env::get('SMTP_USER', '');
+        $this->password = Env::get('SMTP_PASSWORD', '');
+        $this->fromEmail = Env::get('SMTP_FROM_EMAIL', 'noreply@hidalpi.com');
+        $this->fromName = Env::get('SMTP_FROM_NAME', 'HidalPi Web');
+    }
     
     /**
      * Enviar email de confirmación de cita

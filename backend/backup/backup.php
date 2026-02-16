@@ -6,6 +6,7 @@
 
 require_once '../auth/AuthService.php';
 require_once '../config/database.php';
+require_once '../config/env.php';
 
 class BackupService {
     private $pdo;
@@ -15,11 +16,13 @@ class BackupService {
     public function __construct() {
         $this->pdo = getConnection();
         $this->backupDir = __DIR__ . '/respaldos/';
+        
+        // Load database config from environment
         $this->dbConfig = [
-            'host' => 'localhost',
-            'username' => 'root',
-            'password' => '',
-            'database' => 'hidalpi_web'
+            'host' => Env::get('DB_HOST', 'localhost'),
+            'username' => Env::get('DB_USER', 'root'),
+            'password' => Env::get('DB_PASSWORD', ''),
+            'database' => Env::get('DB_NAME', 'hidalpi_web')
         ];
         
         // Crear directorio de respaldos si no existe
@@ -363,7 +366,23 @@ class BackupService {
      * Descargar respaldo
      */
     public function descargarRespaldo($filename) {
+        // Sanitize filename to prevent path traversal
+        $filename = basename($filename);
+        
+        // Validate filename format
+        if (!preg_match('/^backup_(completo|datos|estructura)_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.sql$/', $filename)) {
+            return ['success' => false, 'message' => 'Nombre de archivo inválido'];
+        }
+        
         $filepath = $this->backupDir . $filename;
+        
+        // Ensure the file is within the backup directory
+        $realBackupDir = realpath($this->backupDir);
+        $realFilePath = realpath($filepath);
+        
+        if ($realFilePath === false || strpos($realFilePath, $realBackupDir) !== 0) {
+            return ['success' => false, 'message' => 'Acceso denegado'];
+        }
         
         if (file_exists($filepath)) {
             return [
@@ -472,6 +491,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             break;
         case 'descargar':
             $filename = $_GET['filename'] ?? '';
+            
+            // Validate filename is not empty
+            if (empty($filename)) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'message' => 'Nombre de archivo requerido']);
+                break;
+            }
+            
             $resultado = $backupService->descargarRespaldo($filename);
             
             if ($resultado['success']) {

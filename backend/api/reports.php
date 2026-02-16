@@ -4,10 +4,14 @@
  * API to generate CSV reports
  */
 
+require_once __DIR__ . '/../config/security.php';
+
+// Initialize security
+Security::enforceHTTPS();
+Security::addSecurityHeaders();
+Security::setupCORS();
+
 header('Content-Type: application/csv');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET');
-header('Access-Control-Allow-Headers: Content-Type');
 
 require_once '../auth/AuthService.php';
 require_once '../config/database.php';
@@ -17,6 +21,13 @@ $authService->requiereAdministrador();
 
 $pdo = getConnection();
 $type = $_GET['type'] ?? '';
+
+// Validate type parameter
+$validTypes = ['empresas', 'clientes', 'citas', 'abogados', 'servicios'];
+if (!in_array($type, $validTypes)) {
+    http_response_code(400);
+    die('Tipo de reporte inválido');
+}
 
 switch ($type) {
     case 'empresas':

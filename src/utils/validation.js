@@ -173,16 +173,22 @@ export const validateRequiredFields = (data, requiredFields) => {
 
 /**
  * Sanitizes string input
+ * Note: This is a basic sanitization. For production use, consider a library like DOMPurify
  * @param {string} input - Input to sanitize
  * @returns {string} - Sanitized input
  */
 export const sanitizeString = (input) => {
   if (typeof input !== 'string') return '';
   
-  return input
+  // Create a temporary div element to use browser's built-in HTML parser
+  const temp = document.createElement('div');
+  temp.textContent = input;
+  const sanitized = temp.innerHTML;
+  
+  return sanitized
     .trim()
-    .replace(/[<>]/g, '') // Remove potential HTML tags
-    .replace(/\s+/g, ' '); // Replace multiple spaces with single space
+    // Additional cleanup
+    .replace(/\s+/g, ' ');
 };
 
 /**
